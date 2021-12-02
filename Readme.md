@@ -17,12 +17,22 @@ INSTALLED_APPS = [
 
 `my_app/jobs.py`:
 ```python
+from datetime import datetime
+
 from job_runner import schedule
 
-# Run this job periodically - at most every 45 seconds and at least every 30 seconds
-@schedule(30, 15)
+# Run this job periodically - at most every 10 seconds and at least every 60 seconds
+@schedule(10, 50)
 def my_great_job():
-    print("My great job is getting called")
+    print(f"My great job is getting called at {datetime.now()}")
 ```
 
 Start the job runner: `python manage.py run_jobs`
+
+```text
+> python manage.py run_jobs
+
+My great job is getting called at 2021-12-02 19:24:11.139457
+My great job is getting called at 2021-12-02 19:24:27.777766
+My great job is getting called at 2021-12-02 19:25:21.121113
+```
