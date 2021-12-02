@@ -31,8 +31,9 @@ class JobTracker:
         self._lock = Lock()
         self._jobs: List[RegisteredJob] = []
 
-    def add_job(self, job: RegisteredJob):
+    def _add_job(self, job: RegisteredJob):
         """Add a tracked job"""
+
         with self._lock:
             self._jobs.append(job)
 
@@ -46,7 +47,7 @@ class JobTracker:
 
         job = RegisteredJob(func=func, interval=interval, variance=variance)
 
-        self.add_job(job)
+        self._add_job(job)
 
     def get_jobs(self) -> List[RegisteredJob]:
         """Get all the jobs that have been registered"""
