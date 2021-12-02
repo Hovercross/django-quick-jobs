@@ -4,6 +4,24 @@ version = "0.1.0"
 description = "A method of quickly and simply running background jobs in a Django project"
 authors = ["Adam Peacock <adam@thepeacock.net>"]
 license = "MIT"
+packages = [
+    { include = "job_runner" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+include = [
+    "LICENSE"
+]
+readme = "Readme.md"
+homepage = "https://github.com/Hovercross/django-quick-jobs"
+repository = "https://github.com/Hovercross/django-quick-jobs"
+keywords = ["django", "tasks", "background"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
