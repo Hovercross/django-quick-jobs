@@ -7,7 +7,7 @@ from datetime import datetime
 from random import random
 from threading import Thread, Event, Lock
 
-from job_runner import RegisteredJob
+from job_runner.tracker import RegisteredJob
 
 log = logging.getLogger(__name__)
 
