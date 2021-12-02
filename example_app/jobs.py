@@ -1,8 +1,8 @@
-"""Job from an external app for test purposes"""
+from datetime import datetime
 
 from job_runner import schedule
 
-
-@schedule(30, 0)
-def say_hello():
-    print("Hello from example app")
+# Run this job periodically - at most every 10 seconds and at least every 60 seconds
+@schedule(10, 50)
+def my_great_job():
+    print(f"My great job is getting called at {datetime.now()}")

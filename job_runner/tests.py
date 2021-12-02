@@ -5,7 +5,7 @@ from typing import Iterable, Tuple
 
 import pytest
 
-from example_app.jobs import say_hello
+from example_app.jobs import my_great_job
 from .singlton import import_jobs
 from .tracker import AutoTime, RegisteredJob, JobTracker
 
@@ -19,9 +19,9 @@ TIME_EQUIVS = [
 
 def test_global_scheduler():
     expected_job = RegisteredJob(
-        interval=timedelta(seconds=30),
-        variance=timedelta(seconds=0),
-        func=say_hello,
+        interval=timedelta(seconds=10),
+        variance=timedelta(seconds=50),
+        func=my_great_job,
     )
 
     assert expected_job in import_jobs()

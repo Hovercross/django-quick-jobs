@@ -10,12 +10,12 @@ Jobs are not coordinated across multiple instances of run_jobs. The individual j
 ```python
 INSTALLED_APPS = [
     ...
-    'my_app',
+    'example_app',
     'job_runner',
 ]
 ```
 
-`my_app/jobs.py`:
+`example_app/jobs.py`:
 ```python
 from datetime import datetime
 
