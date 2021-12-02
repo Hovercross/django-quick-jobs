@@ -35,28 +35,23 @@ class JobTracker:
         with self._lock:
             self._jobs.append(job)
 
-    def schedule(self, interval: AutoTime = None, variance: AutoTime = None):
-        """Decorator to schedule the job to be run every interval
-        plus a random time up to variance"""
+    def schedule_job(self, func: Job, interval: AutoTime = None, variance: AutoTime = None):
+        """Schedule a job to run every {interval} < run time < {variance}"""
 
-        interval = _read_auto(interval, timedelta(seconds=0))
-        variance = _read_auto(variance, timedelta(seconds=0))
+        interval = _read_auto_time(interval, timedelta(seconds=0))
+        variance = _read_auto_time(variance, timedelta(seconds=0))
 
-        def decorator(func: Callable[[], None]):
-            obj = RegisteredJob(interval=interval, variance=variance, func=func)
+        job = RegisteredJob(func=func, interval=interval, variance=variance)
 
-            self.add_job(obj)
+        self.add_job(job)
 
-            return func
-
-        return decorator
 
     def get_jobs(self) -> List[RegisteredJob]:
         """Get all the jobs that have been registered"""
         return self._jobs[:]
 
 
-def _read_auto(val: AutoTime, default: timedelta) -> timedelta:
+def _read_auto_time(val: AutoTime, default: timedelta) -> timedelta:
     if val is None:
         return default
 

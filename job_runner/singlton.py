@@ -3,47 +3,48 @@
 from typing import List
 import logging
 import importlib
+from datetime import timedelta
 
 from django.conf import settings
 
-from .tracker import JobTracker, RegisteredJob
+from .tracker import Job, JobTracker, RegisteredJob, AutoTime
 
 log = logging.getLogger(__name__)
 
+_tracker = JobTracker()
 
-class _GlobalTracker:
-    def __init__(self):
-        self.did_imports = False
-        self.tracker = JobTracker()
+def import_jobs():
+    """Import all jobs into the global tracker"""
 
-    def find_jobs(self) -> List[RegisteredJob]:
-        """Get all the jobs from the tracker after finding all jobs"""
+    for app_name in settings.INSTALLED_APPS:
+        try:
+            module_name = f"{app_name}.jobs"
+            log.debug("Importing %s", module_name)
 
-        self.import_once()
-        return self.tracker.get_jobs()
+            # This will cause the decorators to be run and jobs to be registered
+            importlib.import_module(module_name)
+            log.info("Successfully imported %s", module_name)
+        except ImportError:
+            log.debug("Package %s did not have a jobs file", app_name)
 
-    def import_once(self):
-        """Run the imports exactly once"""
+def schedule(interval: AutoTime = None, variance: AutoTime = None):
+    """Decorator to schedule the job to be run every
+    interval plus a random time up to variance"""
 
-        if self.did_imports:
-            return
-        
-        self.did_imports = True
+    def decorator(func: Job):
+        _tracker.schedule_job(func, interval, variance)
 
-        for app_name in settings.INSTALLED_APPS:
-            try:
-                module_name = f"{app_name}.jobs"
-                log.debug("Importing %s", module_name)
+        return func
 
-                # This will cause the decorators to be run and jobs to be registered
-                importlib.import_module(module_name)
-                log.info("Successfully imported %s", module_name)
-            except ImportError:
-                log.debug("Package %s did not have a jobs file", app_name)
+    return decorator
 
 
+def schedule_job(func: Job, interval: AutoTime = None, variance: AutoTime = None):
+    """Schedule a given job into the global tracker"""
 
-_global_tracker = _GlobalTracker()
+    _tracker.tracker.schedule_job(func, interval, variance)
 
-schedule = _global_tracker.tracker.schedule
-find_jobs = _global_tracker.find_jobs
+def find_jobs() -> List[RegisteredJob]:
+    """Find all jobs registerd into the global tracker"""
+
+    return _tracker.get_jobs()
