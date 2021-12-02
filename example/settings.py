@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "example_app",  # For test coverage from a secondary app
     "job_runner",
 ]
 
