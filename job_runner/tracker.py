@@ -13,6 +13,7 @@ AutoTime = Union[None, timedelta, int, float]
 @dataclass(frozen=True)
 class RegisteredJob:
     """A job that has been registered to be run periodically"""
+
     interval: timedelta
     variance: timedelta
     func: Job
@@ -35,7 +36,9 @@ class JobTracker:
         with self._lock:
             self._jobs.append(job)
 
-    def schedule_job(self, func: Job, interval: AutoTime = None, variance: AutoTime = None):
+    def schedule_job(
+        self, func: Job, interval: AutoTime = None, variance: AutoTime = None
+    ):
         """Schedule a job to run every {interval} < run time < {variance}"""
 
         interval = _read_auto_time(interval, timedelta(seconds=0))
@@ -44,7 +47,6 @@ class JobTracker:
         job = RegisteredJob(func=func, interval=interval, variance=variance)
 
         self.add_job(job)
-
 
     def get_jobs(self) -> List[RegisteredJob]:
         """Get all the jobs that have been registered"""

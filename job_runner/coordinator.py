@@ -31,7 +31,7 @@ class _JobThread(Thread):
 
         # Use the variance as an initial delay to prevent thundering herd
         initial_delay = self.job.variance * random()
-        
+
         if initial_delay:
             log.info("Waiting %s for first job run")
 

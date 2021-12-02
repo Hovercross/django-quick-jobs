@@ -7,13 +7,14 @@ from django.core.management.base import BaseCommand
 from job_runner.singlton import import_jobs
 from job_runner.coordinator import Coordinator
 
+
 class Command(BaseCommand):
-    help = 'Run all background jobs'
+    help = "Run all background jobs"
 
     def handle(self, *args, **options):
         coordinator = Coordinator()
         coordinator.start()
-        
+
         # Signals can throw extra stuff into args and kwargs that we don't care about.
         # Wrap their handlers up to just call the coordinator stop
         def stop_signal_handler(*args, **kwargs):
