@@ -24,8 +24,8 @@ repository = "https://github.com/Hovercross/django-quick-jobs"
 keywords = ["django", "tasks", "background"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-Django = ">=3.2"
+python = ">=3.6.2,<4.0"
+Django = ">=2.2"
 
 [tool.poetry.dev-dependencies]
 black = "^21.11b1"
