@@ -25,24 +25,22 @@ class _GlobalTracker:
     def import_once(self):
         """Run the imports exactly once"""
 
-        if not self.did_imports:
-            _run_imports()
-            self.did_imports = True
+        if self.did_imports:
+            return
+        
+        self.did_imports = True
 
+        for app_name in settings.INSTALLED_APPS:
+            try:
+                module_name = f"{app_name}.jobs"
+                log.debug("Importing %s", module_name)
 
-def _run_imports():
-    """Run all the job imports to trigger the global tracker"""
+                # This will cause the decorators to be run and jobs to be registered
+                importlib.import_module(module_name)
+                log.info("Successfully imported %s", module_name)
+            except ImportError:
+                log.debug("Package %s did not have a jobs file", app_name)
 
-    for app_name in settings.INSTALLED_APPS:
-        try:
-            module_name = f"{app_name}.jobs"
-            log.debug("Importing %s", module_name)
-
-            # This will cause the decorators to be run and jobs to be registered
-            importlib.import_module(module_name)
-            log.info("Successfully imported %s", module_name)
-        except ImportError:
-            log.debug("Package %s did not have a jobs file", app_name)
 
 
 _global_tracker = _GlobalTracker()
