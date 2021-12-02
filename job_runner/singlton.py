@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 _tracker = JobTracker()
 
-def import_jobs():
+def import_jobs() -> List[RegisteredJob]:
     """Import all jobs into the global tracker"""
 
     for app_name in settings.INSTALLED_APPS:
@@ -26,6 +26,8 @@ def import_jobs():
             log.info("Successfully imported %s", module_name)
         except ImportError:
             log.debug("Package %s did not have a jobs file", app_name)
+    
+    return _tracker.get_jobs()
 
 def schedule(interval: AutoTime = None, variance: AutoTime = None):
     """Decorator to schedule the job to be run every
@@ -43,8 +45,3 @@ def schedule_job(func: Job, interval: AutoTime = None, variance: AutoTime = None
     """Schedule a given job into the global tracker"""
 
     _tracker.tracker.schedule_job(func, interval, variance)
-
-def find_jobs() -> List[RegisteredJob]:
-    """Find all jobs registerd into the global tracker"""
-
-    return _tracker.get_jobs()

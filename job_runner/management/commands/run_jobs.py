@@ -4,7 +4,7 @@ import signal
 
 from django.core.management.base import BaseCommand
 
-from job_runner import find_jobs
+from job_runner.singlton import import_jobs
 from job_runner.coordinator import Coordinator
 
 class Command(BaseCommand):
@@ -13,14 +13,16 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         coordinator = Coordinator()
         coordinator.start()
-
-        def stop_signal(*args, **kwargs):
+        
+        # Signals can throw extra stuff into args and kwargs that we don't care about.
+        # Wrap their handlers up to just call the coordinator stop
+        def stop_signal_handler(*args, **kwargs):
             coordinator.request_stop()
 
-        signal.signal(signal.SIGINT, stop_signal)
-        signal.signal(signal.SIGTERM, stop_signal)
+        signal.signal(signal.SIGINT, stop_signal_handler)
+        signal.signal(signal.SIGTERM, stop_signal_handler)
 
-        for job in find_jobs():
+        for job in import_jobs():
             coordinator.add(job)
 
         coordinator.join()
