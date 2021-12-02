@@ -18,7 +18,7 @@ TIME_EQUIVS = [
 
 
 @schedule(30, 0)
-def test_job():
+def example_job():
     return 42
 
 
@@ -26,7 +26,7 @@ def test_global_scheduler():
     expected_job = RegisteredJob(
         interval=timedelta(seconds=30),
         variance=timedelta(seconds=0),
-        func=test_job,
+        func=example_job,
     )
 
     assert expected_job in import_jobs()
