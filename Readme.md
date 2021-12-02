@@ -2,7 +2,7 @@
 
 I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners, and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s), and then decorating each job with `@job_runner.schedule(interval, variance)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every interval with an additional random delay between 0 and the variance.
 
-Jobs are not coordinated across multiple instances of run_jobs. In my case, the individual jobs were designed to handle concurrency themselves via `select_for_update=True` in the queryset.
+Jobs are not coordinated across multiple instances of run_jobs. The individual jobs were designed to handle concurrency, for instance by locking using `select_for_update=True` in a queryset.
 
 ## Example usage
 
