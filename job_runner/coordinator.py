@@ -36,7 +36,7 @@ class _JobThread(Thread):
             log.info("Waiting %s for first job run")
 
             # If we get interrupted during the initial wait,
-            # we'll immediatly return and then exit at the
+            # we'll immediately return and then exit at the
             # start of the while loop below
             self.stopping.wait(initial_delay.total_seconds())
 
@@ -67,8 +67,8 @@ class _JobThread(Thread):
                 log.info("%s not ready to be run, waiting %s", self.job.name, delay)
 
                 # We do the delay inside of the event wait so that we can respond
-                # immediatly to a stop signal. If we get a stop signal, we'll
-                # stop the wait here and then immediatly exit the while loop
+                # immediately to a stop signal. If we get a stop signal, we'll
+                # stop the wait here and then immediately exit the while loop
                 self.stopping.wait(delay.total_seconds())
             else:
                 log.info("%s being run with no delay", self.job.name)
