@@ -1,7 +1,7 @@
 """Tests for the job scheduler"""
 
 from datetime import timedelta
-from typing import Iterable, Tuple
+from typing import Iterable, List, Tuple
 
 import pytest
 
@@ -9,7 +9,7 @@ from example_app.jobs import my_great_job
 from .singlton import import_jobs
 from .tracker import AutoTime, RegisteredJob, JobTracker
 
-TIME_EQUIVS = [
+TIME_EQUIVALENCIES: List[Tuple[AutoTime, timedelta]] = [
     (30, timedelta(seconds=30)),
     (60.0, timedelta(seconds=60)),
     (0, timedelta(seconds=0)),
@@ -44,8 +44,8 @@ def test_schedule_job():
 
 
 def _get_test_time_data() -> Iterable[Tuple[AutoTime, AutoTime, timedelta, timedelta]]:
-    for interval, expected_interval in TIME_EQUIVS:
-        for variance, expected_variance in TIME_EQUIVS:
+    for interval, expected_interval in TIME_EQUIVALENCIES:
+        for variance, expected_variance in TIME_EQUIVALENCIES:
             yield (interval, variance, expected_interval, expected_variance)
 
 
