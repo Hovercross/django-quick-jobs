@@ -34,7 +34,7 @@ class _JobThread(Thread):
         initial_delay = self.job.variance * random()
 
         if initial_delay:
-            self.log.info("Waiting for first job run")
+            self.log.info("Waiting for first job run", wait_time=initial_delay)
 
             # If we get interrupted during the initial wait,
             # we'll immediately return and then exit at the
