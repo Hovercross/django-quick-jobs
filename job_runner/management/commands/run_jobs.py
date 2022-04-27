@@ -23,7 +23,11 @@ class Command(BaseCommand):
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
 
-        for job in import_jobs():
-            coordinator.add(job)
+        try:
+            for job in import_jobs():
+                coordinator.add(job)
+        except Exception as exc:
+            coordinator.request_stop()
+            raise exc
 
         coordinator.join()
