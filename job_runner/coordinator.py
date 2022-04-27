@@ -56,7 +56,7 @@ class _JobThread(Thread):
                     continue
 
             except Exception as exc:
-                self.log.exception("Finished job with exception", error=exc)
+                self.log.exception("Finished job with exception", error=str(exc))
 
             this_interval = self.job.interval + random() * self.job.variance
             next_run = started_at + this_interval
