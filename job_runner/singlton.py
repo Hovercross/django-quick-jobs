@@ -34,19 +34,19 @@ def import_jobs() -> List[RegisteredJob]:
     return _tracker.get_jobs()
 
 
+def schedule_job(func: Job, interval: AutoTime = None, variance: AutoTime = None):
+    """Schedule a given job into the global tracker"""
+
+    _tracker.schedule_job(func, interval, variance)
+
+
 def schedule(interval: AutoTime = None, variance: AutoTime = None):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
-        _tracker.schedule_job(func, interval, variance)
+        schedule_job(func, interval, variance)
 
         return func
 
     return decorator
-
-
-def schedule_job(func: Job, interval: AutoTime = None, variance: AutoTime = None):
-    """Schedule a given job into the global tracker"""
-
-    _tracker.schedule_job(func, interval, variance)
