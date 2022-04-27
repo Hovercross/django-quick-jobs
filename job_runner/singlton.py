@@ -20,10 +20,14 @@ def import_jobs() -> List[RegisteredJob]:
 
     for app_name in settings.INSTALLED_APPS:
         module_name = f"{app_name}.jobs"
-        log = logger.bind(module_name=module_name, app_name=app_name)
+        log = logger.bind(app_name=app_name)
+
+        if app_name.startswith("django."):
+            log.debug("Skipping module import")
+            continue
 
         try:
-            log.debug("Importing module")
+            log.debug("Importing jobs module")
 
             # This will cause the decorators to be run and jobs to be registered
             importlib.import_module(module_name)
