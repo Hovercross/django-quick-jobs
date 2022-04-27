@@ -1,15 +1,16 @@
 """Singleton tracker with automatic imports"""
 
 from typing import List
-import logging
 import importlib
 from datetime import timedelta
+
+from structlog import get_logger
 
 from django.conf import settings
 
 from .tracker import Job, JobTracker, RegisteredJob, AutoTime
 
-log = logging.getLogger(__name__)
+logger = get_logger()
 
 _tracker = JobTracker()
 
@@ -18,15 +19,17 @@ def import_jobs() -> List[RegisteredJob]:
     """Import all jobs into the global tracker"""
 
     for app_name in settings.INSTALLED_APPS:
+        module_name = f"{app_name}.jobs"
+        log = logger.bind(module_name=module_name, app_name=app_name)
+
         try:
-            module_name = f"{app_name}.jobs"
-            log.debug("Importing %s", module_name)
+            log.debug("Importing module")
 
             # This will cause the decorators to be run and jobs to be registered
             importlib.import_module(module_name)
-            log.info("Successfully imported %s", module_name)
+            log.info("Module successfully imported")
         except ImportError:
-            log.debug("Package %s did not have a jobs file", app_name)
+            log.debug("Package did not have a jobs files")
 
     return _tracker.get_jobs()
 
@@ -46,4 +49,4 @@ def schedule(interval: AutoTime = None, variance: AutoTime = None):
 def schedule_job(func: Job, interval: AutoTime = None, variance: AutoTime = None):
     """Schedule a given job into the global tracker"""
 
-    _tracker.tracker.schedule_job(func, interval, variance)
+    _tracker.schedule_job(func, interval, variance)

@@ -2,14 +2,15 @@
 
 from typing import List
 
-import logging
 from datetime import datetime
 from random import random
 from threading import Thread, Event, Lock
 
+from structlog import get_logger
+
 from job_runner.tracker import RegisteredJob
 
-log = logging.getLogger(__name__)
+logger = get_logger()
 
 
 class _JobThread(Thread):
@@ -18,22 +19,22 @@ class _JobThread(Thread):
     def __init__(self, job: RegisteredJob):
         self.job = job
         self.stopping = Event()
+        self.log = logger.bind(job_name=self.job.name)
 
         super().__init__()
 
     def run(self):
-        log.info(
-            "Thread for %s executing every %s + %s started",
-            self.job.name,
-            self.job.interval,
-            self.job.variance,
+        self.log.info(
+            "Starting job execution thread",
+            interval=self.job.interval,
+            variance=self.job.variance,
         )
 
         # Use the variance as an initial delay to prevent thundering herd
         initial_delay = self.job.variance * random()
 
         if initial_delay:
-            log.info("Waiting %s for first job run")
+            self.log.info("Waiting for first job run")
 
             # If we get interrupted during the initial wait,
             # we'll immediately return and then exit at the
@@ -41,22 +42,21 @@ class _JobThread(Thread):
             self.stopping.wait(initial_delay.total_seconds())
 
         while not self.stopping.is_set():
-            log.info("Starting %s", self.job.name)
+            self.log.info("Job starting")
             started_at = datetime.now()
 
             try:
                 run_again = self.job.func()
-                log.info("Finished %s successfully", self.job.name)
+                self.log.info("Finished successfully")
 
                 if run_again:
-                    log.info(
-                        "%s indicated more work and is being immediatly scheduled",
-                        self.job.name,
+                    self.log.info(
+                        "Immediately rescheduling job",
                     )
                     continue
 
             except Exception as exc:
-                log.exception("Finished %s with exception: %s", self.job.name, exc)
+                self.log.exception("Finished job with exception", error=exc)
 
             this_interval = self.job.interval + random() * self.job.variance
             next_run = started_at + this_interval
@@ -64,16 +64,16 @@ class _JobThread(Thread):
             delay = next_run - now
 
             if delay.total_seconds() > 0:
-                log.info("%s not ready to be run, waiting %s", self.job.name, delay)
+                self.log.info("Job not ready to be run", wait_time=delay)
 
                 # We do the delay inside of the event wait so that we can respond
                 # immediately to a stop signal. If we get a stop signal, we'll
                 # stop the wait here and then immediately exit the while loop
                 self.stopping.wait(delay.total_seconds())
             else:
-                log.info("%s being run with no delay", self.job.name)
+                self.log.info("Job is being executed with no delay")
 
-        log.info("Thread running %s stopped", self.job.name)
+        self.log.info("Job thread stopped")
 
     def request_stop(self):
         self.stopping.set()
@@ -84,24 +84,25 @@ class Coordinator(Thread):
         self._evt = Event()
         self._workers: List[_JobThread] = []
         self._lock = Lock()
+        self.log = logger.bind(thread="coordinator")
 
         super().__init__()
 
     def run(self):
-        log.info("Job tracker thread started")
+        self.log.info("Thread started")
         self._evt.wait()
-        log.info("Job tracker thread beginning shutdown")
+        self.log.info("Thread beginning shutdown")
 
         for worker in self._workers:
-            log.debug("Signaling stop for %s", worker.job.name)
+            self.log.debug("Signaling worker stop", job_name=worker.job.name)
             worker.request_stop()
 
         for worker in self._workers:
-            log.info("Waiting for %s shutdown", worker.job.name)
+            self.log.info("Waiting for worker shutdown", job_name=worker.job.name)
             worker.join()
-            log.info("%s shutdown finished", worker.job.name)
+            self.log.info("Worker shutdown finished", job_name=worker.job.name)
 
-        log.info("Job tracker thread finished")
+        self.log.info("Job tracker thread finished")
         self._evt.clear()
 
     def add(self, job: RegisteredJob):
@@ -113,5 +114,5 @@ class Coordinator(Thread):
             thread.start()
 
     def request_stop(self):
-        log.info("Signaling coordinator stop")
+        self.log.info("Signaling coordinator stop")
         self._evt.set()
