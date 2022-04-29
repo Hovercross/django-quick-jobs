@@ -23,6 +23,10 @@ class RegisteredJob:
         """The full name of the function to be called"""
         return f"{self.func.__module__}.{self.func.__name__}"
 
+    @property
+    def maximum_interval(self) -> timedelta:
+        return self.interval + self.variance
+
 
 class JobTracker:
     """Track the registered jobs"""
