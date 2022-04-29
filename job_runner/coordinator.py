@@ -1,10 +1,12 @@
 """The coordinator is responsible for running all jobs"""
 
-from typing import Callable, List
+from datetime import timedelta
+from typing import List
 
-from datetime import datetime
 from random import random
 from threading import Thread, Event, Lock
+
+from django.utils import timezone
 
 from structlog import get_logger
 
@@ -45,27 +47,27 @@ class _JobThread(Thread):
 
         while not self.stopping.is_set():
             self.log.info("Job starting")
-            started_at = datetime.now()
+            started_at = timezone.now()
 
-            env = RunEnvironment()
+            env = RunEnvironment(self.stopping)
 
             try:
-                run_again = self.job.func(env)
-                self.log.info("Finished successfully")
+                self.job.func(env)
 
-                if run_again:
-                    self.log.info(
-                        "Immediately rescheduling job",
-                    )
-                    continue
+                self.log.info("Finished successfully")
 
             except Exception as exc:
                 self.log.exception("Finished job with exception", error=str(exc))
 
-            this_interval = self.job.interval + random() * self.job.variance
-            next_run = started_at + this_interval
-            now = datetime.now()
-            delay = next_run - now
+            if env.did_request_rerun:
+                self.log.info("Job requested rerun without delay")
+
+            delay = timedelta(seconds=0)
+            if not env.did_request_rerun:
+                this_interval = self.job.interval + random() * self.job.variance
+                next_run = started_at + this_interval
+                now = timezone.now()
+                delay = next_run - now
 
             if delay.total_seconds() > 0:
                 self.log.info(

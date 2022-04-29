@@ -3,21 +3,40 @@
 from threading import Event
 from typing import Callable, List, Optional, Union
 from datetime import timedelta
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from threading import Lock
 
+AutoTime = Union[None, timedelta, int, float]
 
-@dataclass
+
 class RunEnvironment:
     """The run environment is passed into all jobs when they"
     "are run and exposes information about the execution"""
 
-    # An event that will get set if a shutdown is requested
-    stopping: Event = field(default_factory=Event)
+    def __init__(self, stop_evt: Event):
+        self._stop_evt = stop_evt
+        self._did_request_rerun = False
+
+    def wait_for_stop_request(self, timeout: AutoTime):
+        """Wait for stop should be used instead of any sleeps"""
+
+        wait_time = _read_auto_time(timeout, default=timedelta(seconds=0))
+
+        self._stop_evt.wait(wait_time.total_seconds())
+
+    def request_rerun(self):
+        self._did_request_rerun = True
+
+    @property
+    def is_stop_requested(self) -> bool:
+        return self._stop_evt.is_set()
+
+    @property
+    def did_request_rerun(self):
+        return self._did_request_rerun
 
 
 Job = Callable[[RunEnvironment], Optional[bool]]
-AutoTime = Union[None, timedelta, int, float]
 
 
 @dataclass(frozen=True)
