@@ -36,7 +36,9 @@ class _JobThread(Thread):
         initial_delay = self.job.variance * random()
 
         if initial_delay:
-            self.log.info("Waiting for first job run", wait_time=initial_delay)
+            self.log.info(
+                "Waiting for first job run", wait_time=initial_delay.total_seconds()
+            )
 
             # If we get interrupted during the initial wait,
             # we'll immediately return and then exit at the
@@ -69,7 +71,9 @@ class _JobThread(Thread):
             delay = next_run - now
 
             if delay.total_seconds() > 0:
-                self.log.info("Job not ready to be run", wait_time=delay)
+                self.log.info(
+                    "Job not ready to be run", wait_time=delay.total_seconds()
+                )
 
                 # We do the delay inside of the event wait so that we can respond
                 # immediately to a stop signal. If we get a stop signal, we'll
