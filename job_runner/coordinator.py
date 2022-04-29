@@ -9,6 +9,7 @@ from threading import Thread, Event, Lock
 from django.utils import timezone
 
 from structlog import get_logger
+from job_runner.environment import TrackerEnv
 
 from job_runner.tracker import RegisteredJob, RunEnvironment
 
@@ -49,18 +50,18 @@ class _JobThread(Thread):
             self.log.info("Job starting")
             started_at = timezone.now()
 
-            env = RunEnvironment(self.stopping)
+            env = TrackerEnv(self.stopping)
 
             try:
-                self.job.func(env)
+                self.job.func(env.run_environment)
 
-                self.log.info("Finished successfully")
+                self.log.info("Job finished successfully")
 
             except Exception as exc:
                 self.log.exception("Finished job with exception", error=str(exc))
 
             if env.did_request_rerun:
-                self.log.info("Job requested rerun without delay")
+                self.log.debug("Job requested rerun without delay")
 
             delay = timedelta(seconds=0)
             if not env.did_request_rerun:
@@ -70,7 +71,7 @@ class _JobThread(Thread):
                 delay = next_run - now
 
             if delay.total_seconds() > 0:
-                self.log.info(
+                self.log.debug(
                     "Job not ready to be run", wait_time=delay.total_seconds()
                 )
 
@@ -79,7 +80,7 @@ class _JobThread(Thread):
                 # stop the wait here and then immediately exit the while loop
                 self.stopping.wait(delay.total_seconds())
             else:
-                self.log.info("Job is being executed with no delay")
+                self.log.debug("Job is being executed with no delay")
 
         self.log.info("Job thread stopped")
 

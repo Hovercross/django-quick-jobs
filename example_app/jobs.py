@@ -26,7 +26,7 @@ def test_job_4(env: RunEnvironment):
     print(f"test_job_4 is getting called at {datetime.now()}")
 
     env.wait_for_stop_request(5.8)
-    if env.is_stop_requested:
+    if env.is_stopping:
         print("Test job 4 got immediate stop request")
         return
 
