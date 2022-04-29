@@ -27,6 +27,10 @@ class RegisteredJob:
     def maximum_interval(self) -> timedelta:
         return self.interval + self.variance
 
+    @property
+    def minimum_interval(self) -> timedelta:
+        return self.interval
+
 
 class JobTracker:
     """Track the registered jobs"""
