@@ -10,7 +10,7 @@ from django.conf import settings
 
 from .tracker import Job, JobTracker, RegisteredJob, AutoTime
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 _tracker = JobTracker()
 
