@@ -1,13 +1,18 @@
 from datetime import datetime
 
+from structlog import get_logger
+
 from job_runner import schedule
 
-# Run this job periodically - at most every 10 seconds and at least every 60 seconds
-@schedule(10, 50)
-def my_great_job():
-    print(f"My great job is getting called at {datetime.now()}")
+logging = get_logger()
+
+# Run this job periodically - at most every 30 seconds and at least every 60 seconds
+@schedule(30, 60)
+def test_job_1():
+    logging.debug("Executing test job 1")
 
 
-@schedule(10, 50)
-def my_great_job2():
-    print(f"My second great job is getting called at {datetime.now()}")
+# Run this job periodically - at most every 60 seconds and at least every 180 seconds
+@schedule(60, 120)
+def test_job_2():
+    logging.debug("Executing test job 2")
