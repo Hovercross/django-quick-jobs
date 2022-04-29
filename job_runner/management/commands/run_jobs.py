@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 import os
+from statistics import variance
 import sys
 from threading import Event
 from random import random
@@ -144,7 +145,6 @@ class Command(BaseCommand):
         # The coordinator has started successfully
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
-            max_runtime = timedelta(seconds=(stop_after + stop_variance))
 
             final_delay = stop_after + random() * stop_variance
             log.info("Adding stop watcher after %d seconds", final_delay)
@@ -154,16 +154,9 @@ class Command(BaseCommand):
             ).start()
 
             for job in to_execute:
-                if job.minimum_interval > max_runtime:
-                    log.error(
-                        "Job runner will be stopped before job can execute",
-                        job_name=job.name,
-                        minimum_interval=job.minimum_interval.total_seconds(),
-                        max_runtime=max_runtime.total_seconds(),
-                    )
-                elif job.maximum_interval > min_runtime:
+                if job.variance > min_runtime:
                     log.warning(
-                        "Job runner may be stopped before job can execute",
+                        "Job runner may be stopped before job executes",
                         job_name=job.name,
                         maximum_interval=job.maximum_interval.total_seconds(),
                         min_runtime=min_runtime.total_seconds(),
