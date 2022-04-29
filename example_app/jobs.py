@@ -6,3 +6,8 @@ from job_runner import schedule
 @schedule(10, 50)
 def my_great_job():
     print(f"My great job is getting called at {datetime.now()}")
+
+
+@schedule(10, 50)
+def my_great_job2():
+    print(f"My second great job is getting called at {datetime.now()}")
