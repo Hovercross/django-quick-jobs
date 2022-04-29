@@ -1,12 +1,13 @@
 """Command line interface to the job runner"""
 
 from datetime import timedelta
+import os
 import sys
 from threading import Event
 from random import random
 import signal
 from threading import Thread
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from django.core.management.base import BaseCommand, CommandParser
 
@@ -15,7 +16,7 @@ from structlog import get_logger
 from job_runner.singlton import import_jobs
 from job_runner.coordinator import Coordinator
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 class Command(BaseCommand):
@@ -70,12 +71,21 @@ class Command(BaseCommand):
             ),
         )
 
+        parser.add_argument(
+            "--stop-timeout",
+            type=int,
+            default=5,
+            metavar="SECONDS",
+            help=("When shutting down, how long to wait until a forced exit"),
+        )
+
         return super().add_arguments(parser)
 
     def handle(
         self,
         stop_after: int = 0,
         stop_variance: int = 0,
+        stop_timeout: int = 5,
         include_jobs: List[str] = [],
         exclude_jobs: List[str] = [],
         *args,
@@ -103,16 +113,17 @@ class Command(BaseCommand):
             log.error("There are no jobs to run, exiting")
             sys.exit(1)
 
-        coordinator = Coordinator()
-        coordinator.start()
-
+        request_stop = Event()
         # Signals can throw extra stuff into args and kwargs that we don't care about.
         # Wrap their handlers up to just call the coordinator stop
         def stop_signal_handler(*args, **kwargs):
-            coordinator.request_stop()
+            request_stop.set()
 
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
+
+        coordinator = Coordinator()
+        coordinator.start()
 
         try:
             for job in to_execute:
@@ -121,12 +132,16 @@ class Command(BaseCommand):
 
         except Exception as exc:
             log.exception("Got exception when adding jobs", error=str(exc))
-            stop_signal_handler()
-            coordinator.join()
+            coordinator.request_stop()
+            coordinator.join(stop_timeout)
+
+            if coordinator.is_alive():
+                log.error("Coordinator stop timeout exceeded, forcing exit")
+                os._exit(1)
+
             sys.exit(1)
 
         # The coordinator has started successfully
-        done_evt = Event()
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
             max_runtime = timedelta(seconds=(stop_after + stop_variance))
@@ -134,8 +149,9 @@ class Command(BaseCommand):
             final_delay = stop_after + random() * stop_variance
             log.info("Adding stop watcher after %d seconds", final_delay)
 
-            t = StopThread(final_delay, stop_signal_handler, done_evt)
-            t.start()
+            CancelableDelay(
+                final_delay, request_stop.set, request_stop, name="Job stop delay"
+            ).start()
 
             for job in to_execute:
                 if job.minimum_interval > max_runtime:
@@ -153,27 +169,43 @@ class Command(BaseCommand):
                         min_runtime=min_runtime.total_seconds(),
                     )
 
-        coordinator.join()
-        done_evt.set()
+        log.info("Job runner has finished startup")
+        request_stop.wait()
+        log.info("Beginning job runner shutdown")
+
+        coordinator.request_stop()
+
+        coordinator.join(stop_timeout)
+        if coordinator.is_alive():
+            log.error("Coordinator did not shut down, forcing exit")
+            os._exit(1)
 
 
-class StopThread(Thread):
-    """Stop the coordinator after some amount of time"""
+class CancelableDelay(Thread):
+    """A thread that will run a callback after a
+    certain amount of time unless it is canceled"""
 
-    def __init__(self, delay: float, cb: Callable[[], None], cancel: Event):
+    def __init__(
+        self,
+        delay: float,
+        cb: Callable[[], None],
+        cancel: Event,
+        name: Optional[str] = None,
+    ):
         super().__init__()
-        self.delay = delay
-        self.cb = cb
-        self.cancel = cancel
-        self.log = logger.bind(process="stop thread")
+        self._delay = delay
+        self._cb = cb
+        self._cancel = cancel
+        self._log = logger.bind()
+        if name:
+            self._log = self._log.bind(name=name)
 
     def run(self):
-        self.log.debug("Beginning stop wait")
-        self.cancel.wait(self.delay)
-        if self.cancel.is_set():
-            self.log.debug("Closing thread due to cancelation")
+        self._log.debug("Beginning execution")
+        self._cancel.wait(self._delay)
+        if self._cancel.is_set():
+            self._log.debug("Execution canceled")
             return
 
-        self.log.info("Stop timer triggered, executing stop request")
-        self.cb()
-        self.log.debug("Stop timer exiting")
+        self._log.info("Timeout threshold met")
+        self._cb()
