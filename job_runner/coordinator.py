@@ -11,7 +11,7 @@ from structlog import get_logger
 from job_runner.tracker import RegisteredJob
 from job_runner.exceptions import RequestRestart
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 class _JobThread(Thread):
@@ -123,5 +123,5 @@ class Coordinator(Thread):
             thread.start()
 
     def request_stop(self):
-        self.log.info("Signaling coordinator stop")
+        self.log.info("Coordinator stop request received")
         self._evt.set()
