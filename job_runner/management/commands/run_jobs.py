@@ -22,10 +22,13 @@ class Command(BaseCommand):
     help = "Run all background jobs"
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group()
+
+        group.add_argument(
             "--include-job",
             nargs="+",
             dest="include_jobs",
+            metavar="JOB_NAME",
             default=[],
             help=(
                 "A job name to include. If no jobs are included, "
@@ -33,29 +36,33 @@ class Command(BaseCommand):
             ),
         )
 
-        parser.add_argument(
+        group.add_argument(
             "--exclude-job",
             nargs="+",
             dest="exclude_jobs",
+            metavar="JOB_NAME",
             default=[],
-            help="A job name to exclude, which takes prescience over included jobs",
+            help="A job name to exclude when all jobs are being included",
         )
 
         parser.add_argument(
             "--stop-after",
             type=int,
             default=0,
+            metavar="SECONDS",
             help=(
                 "Only run the job runner for a certian amount of time in seconds. "
                 "This is useful if you want it to be restarted periodically, "
-                "such as if things occasionally go wrong and a restart will fix them"
+                "such as if things occasionally go wrong and a restart will fix them. "
+                "For this to work, the process manager must restart the command after exit"
             ),
         )
 
         parser.add_argument(
-            "--stop-after-variance",
+            "--stop-variance",
             type=int,
             default=0,
+            metavar="SECONDS",
             help=(
                 "If using the stop after, an additional amount of random "
                 "time to delay the stop for. Useful if you have multiple "
@@ -68,7 +75,7 @@ class Command(BaseCommand):
     def handle(
         self,
         stop_after: int = 0,
-        stop_after_variance: int = 0,
+        stop_variance: int = 0,
         include_jobs: List[str] = [],
         exclude_jobs: List[str] = [],
         *args,
@@ -114,7 +121,7 @@ class Command(BaseCommand):
 
         except Exception as exc:
             log.exception("Got exception when adding jobs", error=str(exc))
-            coordinator.request_stop()
+            stop_signal_handler()
             coordinator.join()
             sys.exit(1)
 
@@ -122,12 +129,12 @@ class Command(BaseCommand):
         done_evt = Event()
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
-            max_runtime = timedelta(seconds=(stop_after + stop_after_variance))
+            max_runtime = timedelta(seconds=(stop_after + stop_variance))
 
-            final_delay = stop_after + random() * stop_after_variance
-            log.info("Adding restart watcher after %d seconds", final_delay)
+            final_delay = stop_after + random() * stop_variance
+            log.info("Adding stop watcher after %d seconds", final_delay)
 
-            t = StopThread(final_delay, coordinator.request_stop, done_evt)
+            t = StopThread(final_delay, stop_signal_handler, done_evt)
             t.start()
 
             for job in to_execute:
