@@ -1,6 +1,6 @@
 """The coordinator is responsible for running all jobs"""
 
-from typing import List
+from typing import Callable, List
 
 from datetime import datetime
 from random import random
@@ -9,6 +9,7 @@ from threading import Thread, Event, Lock
 from structlog import get_logger
 
 from job_runner.tracker import RegisteredJob
+from job_runner.exceptions import RequestRestart
 
 logger = get_logger()
 
@@ -16,10 +17,11 @@ logger = get_logger()
 class _JobThread(Thread):
     """Runs a single job on a single schedule"""
 
-    def __init__(self, job: RegisteredJob):
+    def __init__(self, job: RegisteredJob, request_restart: Callable[[], None]):
         self.job = job
         self.stopping = Event()
         self.log = logger.bind(job_name=self.job.name)
+        self.request_restart = request_restart
 
         super().__init__()
 
@@ -55,6 +57,9 @@ class _JobThread(Thread):
                     )
                     continue
 
+            except RequestRestart as exc:
+                self.log.exception("Job requested restart", error=str(exc))
+                self.request_restart()
             except Exception as exc:
                 self.log.exception("Finished job with exception", error=str(exc))
 
@@ -109,7 +114,7 @@ class Coordinator(Thread):
         """Add a job to the list of running jobs"""
 
         with self._lock:
-            thread = _JobThread(job)
+            thread = _JobThread(job, self.request_stop)
             self._workers.append(thread)
             thread.start()
 
