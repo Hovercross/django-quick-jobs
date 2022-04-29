@@ -1,12 +1,22 @@
 """Tracking utils for job runner"""
 
+from threading import Event
 from typing import Callable, List, Optional, Union
 from datetime import timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from threading import Lock
 
-Job = Callable[[], Optional[bool]]
 
+@dataclass
+class RunEnvironment:
+    """The run environment is passed into all jobs when they"
+    "are run and exposes information about the execution"""
+
+    # An event that will get set if a shutdown is requested
+    stopping: Event = field(default_factory=Event)
+
+
+Job = Callable[[RunEnvironment], Optional[bool]]
 AutoTime = Union[None, timedelta, int, float]
 
 

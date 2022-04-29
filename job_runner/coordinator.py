@@ -8,8 +8,7 @@ from threading import Thread, Event, Lock
 
 from structlog import get_logger
 
-from job_runner.tracker import RegisteredJob
-from job_runner.exceptions import RequestRestart
+from job_runner.tracker import RegisteredJob, RunEnvironment
 
 logger = get_logger(__name__)
 
@@ -17,11 +16,10 @@ logger = get_logger(__name__)
 class _JobThread(Thread):
     """Runs a single job on a single schedule"""
 
-    def __init__(self, job: RegisteredJob, request_restart: Callable[[], None]):
+    def __init__(self, job: RegisteredJob):
         self.job = job
         self.stopping = Event()
         self.log = logger.bind(job_name=self.job.name)
-        self.request_restart = request_restart
 
         super().__init__()
 
@@ -49,8 +47,10 @@ class _JobThread(Thread):
             self.log.info("Job starting")
             started_at = datetime.now()
 
+            env = RunEnvironment()
+
             try:
-                run_again = self.job.func()
+                run_again = self.job.func(env)
                 self.log.info("Finished successfully")
 
                 if run_again:
@@ -59,9 +59,6 @@ class _JobThread(Thread):
                     )
                     continue
 
-            except RequestRestart as exc:
-                self.log.exception("Job requested restart", error=str(exc))
-                self.request_restart()
             except Exception as exc:
                 self.log.exception("Finished job with exception", error=str(exc))
 
@@ -118,7 +115,7 @@ class Coordinator(Thread):
         """Add a job to the list of running jobs"""
 
         with self._lock:
-            thread = _JobThread(job, self.request_stop)
+            thread = _JobThread(job)
             self._workers.append(thread)
             thread.start()
 
