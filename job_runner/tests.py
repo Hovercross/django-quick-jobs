@@ -5,7 +5,7 @@ from typing import Iterable, List, Tuple
 
 import pytest
 
-from example_app.jobs import test_job_1
+from example_app.jobs import sample_job_1
 from .singlton import discover_jobs
 from .tracker import AutoTime, RegisteredJob, JobTracker
 
@@ -19,9 +19,9 @@ TIME_EQUIVALENCIES: List[Tuple[AutoTime, timedelta]] = [
 
 def test_global_scheduler():
     expected_job = RegisteredJob(
-        interval=timedelta(seconds=10),
-        variance=timedelta(seconds=50),
-        func=test_job_1,
+        interval=timedelta(seconds=5),
+        variance=timedelta(seconds=0),
+        func=sample_job_1,
     )
 
     assert expected_job in discover_jobs()
