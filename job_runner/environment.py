@@ -39,7 +39,7 @@ class RunEnv:
         self._env.stop_event.wait(wait_time.total_seconds())
 
     def request_rerun(self):
-        self._tracker_env._did_request_rerun = True
+        self._env.request_immediate_rerun = True
 
     @property
     def is_stopping(self) -> bool:
