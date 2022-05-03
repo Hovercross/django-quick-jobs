@@ -1,7 +1,6 @@
 """Tracking utils for job runner"""
 
-from threading import Event
-from typing import Callable, List, Optional, Union
+from typing import List, Protocol
 from datetime import timedelta
 from dataclasses import dataclass
 from threading import Lock
@@ -9,7 +8,10 @@ from threading import Lock
 from .environment import RunEnv
 from .time import AutoTime, read_auto_time
 
-Job = Callable[[RunEnv], None]
+
+class Job(Protocol):
+    def __call__(self, env: RunEnv) -> None:
+        """Call a job with the environment"""
 
 
 @dataclass(frozen=True)

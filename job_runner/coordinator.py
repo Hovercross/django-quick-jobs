@@ -11,7 +11,7 @@ from django.utils import timezone
 from structlog import get_logger
 from job_runner.environment import TrackerEnv, get_environments
 
-from job_runner.tracker import RegisteredJob, RunEnv
+from job_runner.tracker import RegisteredJob
 
 logger = get_logger(__name__)
 
