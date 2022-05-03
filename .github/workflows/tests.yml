@@ -38,6 +38,8 @@ jobs:
         run: pip install Django=="${{ matrix.django-version }}"
       - name: Run tests
         run: pytest
+      - name: Run sample job
+        run: python manage.py run_jobs --stop-after=1 --include-job "example_app.jobs.sample_job_1"
   
   lint:
     runs-on: ubuntu-latest
