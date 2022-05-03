@@ -7,14 +7,19 @@ from threading import Event
 from random import random
 import signal
 from threading import Thread
-from typing import Iterable, List
+from typing import Iterable, List, Set
 
 from django.core.management.base import BaseCommand, CommandParser, CommandError
 
 from structlog import get_logger
 
-from job_runner.singlton import auto_import_jobs
 from job_runner.runner import JobThread
+from job_runner.registration import (
+    RegisteredJob,
+    import_default_jobs,
+    import_jobs_from_module,
+    import_jobs_from_modules,
+)
 
 logger = get_logger(__name__)
 
@@ -105,37 +110,27 @@ class Command(BaseCommand):
     ):
         log = logger.bind()
 
-        try:
-            include_job_modules = {_get_module_name(name) for name in include_jobs}
-        except InvalidJobName as exc:
-            raise CommandError(
-                f"Unable to get module name from job name '{exc.job_name}'"
-            )
-
-        full_job_list = auto_import_jobs(include_job_modules)
-        to_execute = full_job_list[:]
-
         if include_jobs:
-            to_execute = [job for job in to_execute if job.name in include_jobs]
+            jobs = get_jobs_for_included_names(set(include_jobs))
+        elif exclude_jobs:
+            jobs = get_jobs_for_excluded_names(set(exclude_jobs))
+        else:
+            jobs = import_default_jobs()
 
-        to_execute = [job for job in to_execute if job.name not in exclude_jobs]
-        to_execute_names = {job.name for job in to_execute}
+        job_names = {job.name for job in jobs}
 
         log.info(
             "Job list has been computed",
-            to_run=sorted(to_execute_names),
-            to_skip=sorted(
-                [job.name for job in full_job_list if job not in to_execute]
-            ),
+            to_run=sorted(job_names),
         )
 
         # Confirm all included jobs are there. If not, error
         for job_name in include_jobs:
-            if job_name not in to_execute_names:
+            if job_name not in job_names:
                 log.error("Included job does not exist", job_name=job_name)
                 raise CommandError(f"Job '{job_name}' does not exist")
 
-        if not to_execute:
+        if not jobs:
             log.error("There are no jobs to run, exiting")
             raise CommandError("There are no jobs to run")
 
@@ -153,7 +148,7 @@ class Command(BaseCommand):
 
         threads = []
 
-        for job in to_execute:
+        for job in jobs:
             runner = JobThread(job, request_stop)
             runner.setDaemon(True)
             threads.append(runner)
@@ -167,7 +162,7 @@ class Command(BaseCommand):
 
             _EventSetter(timedelta(seconds=final_delay), request_stop).start()
 
-            for job in to_execute:
+            for job in jobs:
                 if job.variance > min_runtime:
                     log.warning(
                         "Job runner may be stopped before job executes",
@@ -231,3 +226,22 @@ def _get_module_name(name: str):
         raise InvalidJobName(name)
 
     return ".".join(parts[0:-1])
+
+
+def get_module_names_for_included_jobs(names: Set[str]) -> Set[str]:
+    out: Set[str] = set()
+
+    return {_get_module_name(name) for name in names}
+
+
+def get_jobs_for_included_names(names: Set[str]) -> Set[RegisteredJob]:
+    module_names = get_module_names_for_included_jobs(names)
+    jobs = import_jobs_from_modules(module_names)
+
+    return {job for job in jobs if job.name in names}
+
+
+def get_jobs_for_excluded_names(names: Set[str]) -> Set[RegisteredJob]:
+    default_jobs = import_default_jobs()
+
+    return {job for job in default_jobs if job.name not in names}

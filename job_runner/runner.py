@@ -10,7 +10,7 @@ from django.utils import timezone
 from structlog import get_logger
 from job_runner.environment import TrackerEnv, get_environments
 
-from job_runner.tracker import RegisteredJob
+from job_runner.registration import RegisteredJob
 
 logger = get_logger(__name__)
 
@@ -41,7 +41,7 @@ class JobThread(Thread):
         run_env, tracker_env = get_environments(self.stopping)
 
         try:
-            self.job.func(run_env)
+            self.job(run_env)
             self.log.info("Job finished successfully")
         except Exception as exc:
             self.log.exception("Finished job with exception", error=str(exc))
