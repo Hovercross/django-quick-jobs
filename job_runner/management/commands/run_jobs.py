@@ -7,9 +7,9 @@ from threading import Event
 from random import random
 import signal
 from threading import Thread
-from typing import Callable, Iterable, List, Optional
+from typing import Iterable, List
 
-from django.core.management.base import BaseCommand, CommandParser
+from django.core.management.base import BaseCommand, CommandParser, CommandError
 
 from structlog import get_logger
 
@@ -17,9 +17,6 @@ from job_runner.singlton import auto_import_jobs
 from job_runner.runner import JobThread
 
 logger = get_logger(__name__)
-
-# This gets defined for testing
-exit_func = os._exit
 
 
 class Command(BaseCommand):
@@ -104,15 +101,16 @@ class Command(BaseCommand):
         exclude_jobs: List[str] = [],
         trial_run: bool = False,
         *args,
-        **kwargs
+        **kwargs,
     ):
         log = logger.bind()
 
         try:
             include_job_modules = {_get_module_name(name) for name in include_jobs}
         except InvalidJobName as exc:
-            log.error("Unable to get module name from job", job_name=exc.job_name)
-            exit_func(1)
+            raise CommandError(
+                f"Unable to get module name from job name '{exc.job_name}'"
+            )
 
         full_job_list = auto_import_jobs(include_job_modules)
         to_execute = full_job_list[:]
@@ -135,11 +133,11 @@ class Command(BaseCommand):
         for job_name in include_jobs:
             if job_name not in to_execute_names:
                 log.error("Included job does not exist", job_name=job_name)
-                exit_func(1)
+                raise CommandError(f"Job '{job_name}' does not exist")
 
         if not to_execute:
             log.error("There are no jobs to run, exiting")
-            exit_func(1)
+            raise CommandError("There are no jobs to run")
 
         if trial_run:
             return
@@ -157,6 +155,7 @@ class Command(BaseCommand):
 
         for job in to_execute:
             runner = JobThread(job, request_stop)
+            runner.setDaemon(True)
             threads.append(runner)
             runner.start()
 
@@ -189,7 +188,7 @@ class Command(BaseCommand):
 
         if waiter.is_alive():
             log.error("Job threads did not shut down, forcing exit")
-            exit_func(1)
+            raise CommandError("Job stop timeout reached")
 
 
 class _EventSetter(Thread):
@@ -212,6 +211,7 @@ class _ThreadWaiter(Thread):
         self.threads = threads
 
         super().__init__()
+        self.setDaemon(True)
 
     def run(self):
         for t in self.threads:
