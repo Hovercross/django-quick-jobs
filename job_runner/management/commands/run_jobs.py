@@ -15,7 +15,7 @@ from django.core.management.base import BaseCommand, CommandParser
 from structlog import get_logger
 
 from job_runner.singlton import discover_jobs
-from job_runner.coordinator import Coordinator
+from job_runner.runner import Coordinator
 
 logger = get_logger(__name__)
 
