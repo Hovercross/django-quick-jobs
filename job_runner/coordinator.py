@@ -19,9 +19,9 @@ logger = get_logger(__name__)
 class _JobThread(Thread):
     """Runs a single job on a single schedule"""
 
-    def __init__(self, job: RegisteredJob):
+    def __init__(self, job: RegisteredJob, stop_event: Event):
         self.job = job
-        self.stopping = Event()
+        self.stopping = stop_event
         self.log = logger.bind(job_name=self.job.name)
 
         super().__init__()
@@ -118,7 +118,7 @@ class Coordinator(Thread):
         """Add a job to the list of running jobs"""
 
         with self._lock:
-            thread = _JobThread(job)
+            thread = _JobThread(job, self._evt)
             self._workers.append(thread)
             thread.start()
 
