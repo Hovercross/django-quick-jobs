@@ -43,10 +43,10 @@ jobs:
           - 3.2.*
           - 4.0.*
         exclude:
-          - django: 4.0.*
-            python: 3.6
-          - django: 4.0.*
-            python: 3.7
+          - django-version: 4.0.*
+            python-version: 3.6
+          - django-version: 4.0.*
+            python-version: 3.7
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python version ${{ matrix.python-version }}
@@ -85,10 +85,10 @@ jobs:
           - 3.2.*
           - 4.0.*
         exclude:
-          - django: 4.0.*
-            python: 3.6
-          - django: 4.0.*
-            python: 3.7
+          - django-version: 4.0.*
+            python-version: 3.6
+          - django-version: 4.0.*
+            python-version: 3.7
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python version ${{ matrix.python-version }}
@@ -127,10 +127,10 @@ jobs:
           - 3.2.*
           - 4.0.*
         exclude:
-          - django: 4.0.*
-            python: 3.6
-          - django: 4.0.*
-            python: 3.7
+          - django-version: 4.0.*
+            python-version: 3.6
+          - django-version: 4.0.*
+            python-version: 3.7
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python version ${{ matrix.python-version }}
