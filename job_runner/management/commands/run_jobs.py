@@ -82,6 +82,17 @@ class Command(BaseCommand):
             help=("When shutting down, how long to wait until a forced exit"),
         )
 
+        parser.add_argument(
+            "--trial-run",
+            action="store_const",
+            const=True,
+            default=False,
+            help=(
+                "Only compute the job list and immediately exit. "
+                "Do begin job execution"
+            ),
+        )
+
         return super().add_arguments(parser)
 
     def handle(
@@ -91,6 +102,7 @@ class Command(BaseCommand):
         stop_timeout: int = 5,
         include_jobs: List[str] = [],
         exclude_jobs: List[str] = [],
+        trial_run: bool = False,
         *args,
         **kwargs
     ):
@@ -128,6 +140,9 @@ class Command(BaseCommand):
         if not to_execute:
             log.error("There are no jobs to run, exiting")
             exit_func(1)
+
+        if trial_run:
+            return
 
         request_stop = Event()
         # Signals can throw extra stuff into args and kwargs that we don't care about.
