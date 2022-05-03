@@ -18,6 +18,9 @@ from job_runner.runner import JobThread
 
 logger = get_logger(__name__)
 
+# This gets defined for testing
+exit_func = os._exit
+
 
 class Command(BaseCommand):
     help = "Run all background jobs"
@@ -111,7 +114,7 @@ class Command(BaseCommand):
 
         if not to_execute:
             log.error("There are no jobs to run, exiting")
-            sys.exit(1)
+            exit_func(1)
 
         request_stop = Event()
         # Signals can throw extra stuff into args and kwargs that we don't care about.
@@ -159,7 +162,7 @@ class Command(BaseCommand):
 
         if waiter.is_alive():
             log.error("Job threads did not shut down, forcing exit")
-            os._exit(1)
+            exit_func(1)
 
 
 class _EventSetter(Thread):
