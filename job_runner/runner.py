@@ -65,7 +65,7 @@ class JobThread(Thread):
                 self.log.debug("Job requested rerun without delay")
                 continue
 
-            this_interval = self.job.interval + random() * self.job.variance
+            this_interval = self.job.interval + self.job.variance * random()
             next_run = started_at + this_interval
             now = timezone.now()
             delay = max(next_run - now, timedelta())

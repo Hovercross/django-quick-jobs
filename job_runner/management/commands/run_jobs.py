@@ -163,7 +163,7 @@ class Command(BaseCommand):
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
 
-            final_delay = stop_after + random() * stop_variance
+            final_delay = stop_after + stop_variance * random()
             log.info("Job runner stop registered", run_time=final_delay)
 
             _EventSetter(timedelta(seconds=final_delay), request_stop).start()
