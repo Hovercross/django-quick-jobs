@@ -96,21 +96,34 @@ class Command(BaseCommand):
     ):
         log = logger.bind()
 
-        full_job_list = auto_import_jobs()
+        try:
+            include_job_modules = {_get_module_name(name) for name in include_jobs}
+        except InvalidJobName as exc:
+            log.error("Unable to get module name from job", job_name=exc.job_name)
+            exit_func(1)
+
+        full_job_list = auto_import_jobs(include_job_modules)
         to_execute = full_job_list[:]
 
         if include_jobs:
             to_execute = [job for job in to_execute if job.name in include_jobs]
 
         to_execute = [job for job in to_execute if job.name not in exclude_jobs]
+        to_execute_names = {job.name for job in to_execute}
 
         log.info(
             "Job list has been computed",
-            to_run=sorted([job.name for job in to_execute]),
+            to_run=sorted(to_execute_names),
             to_skip=sorted(
                 [job.name for job in full_job_list if job not in to_execute]
             ),
         )
+
+        # Confirm all included jobs are there. If not, error
+        for job_name in include_jobs:
+            if job_name not in to_execute_names:
+                log.error("Included job does not exist", job_name=job_name)
+                exit_func(1)
 
         if not to_execute:
             log.error("There are no jobs to run, exiting")
@@ -132,7 +145,6 @@ class Command(BaseCommand):
             threads.append(runner)
             runner.start()
 
-        # The coordinator has started successfully
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
 
@@ -189,3 +201,18 @@ class _ThreadWaiter(Thread):
     def run(self):
         for t in self.threads:
             t.join()
+
+
+class InvalidJobName(ValueError):
+    def __init__(self, job_name: str):
+        self.job_name = job_name
+
+        super().__init__()
+
+
+def _get_module_name(name: str):
+    parts = name.split(".")
+    if len(parts) < 2:
+        raise InvalidJobName(name)
+
+    return ".".join(parts[0:-1])

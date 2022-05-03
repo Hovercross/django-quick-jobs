@@ -1,6 +1,7 @@
 """Singleton tracker with automatic imports"""
 
-from typing import List
+from audioop import add
+from typing import List, Set
 import importlib
 from datetime import timedelta
 
@@ -15,25 +16,29 @@ logger = get_logger(__name__)
 _tracker = JobTracker()
 
 
-def auto_import_jobs() -> List[RegisteredJob]:
+def auto_import_jobs(additional_module_names: Set[str] = set()) -> List[RegisteredJob]:
     """Import all jobs into the global tracker"""
 
-    for app_name in settings.INSTALLED_APPS:
-        module_name = f"{app_name}.jobs"
-        log = logger.bind(app_name=app_name)
+    module_names = {
+        f"{app_name}.jobs"
+        for app_name in settings.INSTALLED_APPS
+        if not app_name.startswith("django.")
+    }
 
-        if app_name.startswith("django."):
-            log.debug("Skipping module import")
-            continue
+    module_names |= additional_module_names
+
+    for module_name in module_names:
+        log = logger.bind(module_name=module_name)
 
         try:
-            log.debug("Importing jobs module")
+            log.debug("Importing module")
 
             # This will cause the decorators to be run and jobs to be registered
             importlib.import_module(module_name)
             log.info("Module successfully imported")
+
         except ImportError:
-            log.debug("Package did not have a jobs files")
+            log.debug("Module not imported")
 
     return _tracker.get_jobs()
 
