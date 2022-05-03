@@ -148,10 +148,4 @@ jobs:
       - name: Re-install specific Django version
         run: pip install Django=="${{ matrix.django-version }}"
       - name: Run job that expects to run forever
-        run: |
-          python manage.py run_jobs --stop-after=1 --include-job "example_app.run_forever_job.run_forever"
-          if [[ $? -ne 1 ]]; then
-            exit 1;
-          fi
-
-          exit 0
+        run: ./test_run_forever_exit.sh
