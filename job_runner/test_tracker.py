@@ -6,7 +6,7 @@ from typing import Iterable, List, Tuple
 import pytest
 
 from example_app.jobs import sample_job_1
-from job_runner.environment import RunEnvironment
+from job_runner.environment import RunEnv
 from .singlton import discover_jobs
 from .tracker import AutoTime, RegisteredJob, JobTracker
 
@@ -29,7 +29,7 @@ def test_global_scheduler():
 
 
 def test_schedule_job():
-    def hello(env: RunEnvironment):
+    def hello(env: RunEnv):
         pass
 
     tracker = JobTracker()
@@ -59,7 +59,7 @@ def test_schedule_job_params(
     expected_interval: timedelta,
     expected_variance: timedelta,
 ):
-    def hello(env: RunEnvironment):
+    def hello(env: RunEnv):
         pass
 
     tracker = JobTracker()

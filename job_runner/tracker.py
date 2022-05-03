@@ -6,10 +6,10 @@ from datetime import timedelta
 from dataclasses import dataclass
 from threading import Lock
 
-from .environment import RunEnvironment
+from .environment import RunEnv
 from .time import AutoTime, read_auto_time
 
-Job = Callable[[RunEnvironment], Optional[bool]]
+Job = Callable[[RunEnv], Optional[bool]]
 
 
 @dataclass(frozen=True)
