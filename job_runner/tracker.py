@@ -9,7 +9,7 @@ from threading import Lock
 from .environment import RunEnv
 from .time import AutoTime, read_auto_time
 
-Job = Callable[[RunEnv], Optional[bool]]
+Job = Callable[[RunEnv], None]
 
 
 @dataclass(frozen=True)

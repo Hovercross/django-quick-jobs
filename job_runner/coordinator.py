@@ -9,14 +9,14 @@ from threading import Thread, Event, Lock
 from django.utils import timezone
 
 from structlog import get_logger
-from job_runner.environment import get_environments
+from job_runner.environment import TrackerEnv, get_environments
 
 from job_runner.tracker import RegisteredJob, RunEnv
 
 logger = get_logger(__name__)
 
 
-class _JobThread(Thread):
+class JobThread(Thread):
     """Runs a single job on a single schedule"""
 
     def __init__(self, job: RegisteredJob, stop_event: Event):
@@ -26,6 +26,29 @@ class _JobThread(Thread):
 
         super().__init__()
 
+    def _initial_wait(self):
+        wait_for = (self.job.variance * random()).total_seconds()
+
+        if not wait_for:
+            self.log.debug("Not performing initial wait")
+            return
+
+        self.log.info("Delaying job first run", wait_time=wait_for)
+        self.stopping.wait(wait_for)
+
+    def _run_once(self) -> TrackerEnv:
+        self.log.info("Job starting")
+
+        run_env, tracker_env = get_environments(self.stopping)
+
+        try:
+            self.job.func(run_env)
+            self.log.info("Job finished successfully")
+        except Exception as exc:
+            self.log.exception("Finished job with exception", error=str(exc))
+
+        return tracker_env
+
     def run(self):
         self.log.info(
             "Starting job execution thread",
@@ -33,54 +56,26 @@ class _JobThread(Thread):
             variance=self.job.variance,
         )
 
-        # Use the variance as an initial delay to prevent thundering herd
-        initial_delay = self.job.variance * random()
-
-        if initial_delay:
-            self.log.info(
-                "Waiting for first job run", wait_time=initial_delay.total_seconds()
-            )
-
-            # If we get interrupted during the initial wait,
-            # we'll immediately return and then exit at the
-            # start of the while loop below
-            self.stopping.wait(initial_delay.total_seconds())
+        self._initial_wait()
 
         while not self.stopping.is_set():
-            self.log.info("Job starting")
             started_at = timezone.now()
-
-            run_env, tracker_env = get_environments(self.stopping)
-
-            try:
-                self.job.func(run_env)
-
-                self.log.info("Job finished successfully")
-
-            except Exception as exc:
-                self.log.exception("Finished job with exception", error=str(exc))
+            tracker_env = self._run_once()
 
             if tracker_env.requested_rerun:
                 self.log.debug("Job requested rerun without delay")
+                continue
 
-            delay = timedelta(seconds=0)
-            if not tracker_env.requested_rerun:
-                this_interval = self.job.interval + random() * self.job.variance
-                next_run = started_at + this_interval
-                now = timezone.now()
-                delay = next_run - now
+            this_interval = self.job.interval + random() * self.job.variance
+            next_run = started_at + this_interval
+            now = timezone.now()
+            delay = max(next_run - now, timedelta())
+            delay_seconds = delay.total_seconds()
 
-            if delay.total_seconds() > 0:
-                self.log.debug(
-                    "Job not ready to be run", wait_time=delay.total_seconds()
-                )
+            if delay:
+                self.log.debug("Delaying next job execution", delay=delay_seconds)
 
-                # We do the delay inside of the event wait so that we can respond
-                # immediately to a stop signal. If we get a stop signal, we'll
-                # stop the wait here and then immediately exit the while loop
-                self.stopping.wait(delay.total_seconds())
-            else:
-                self.log.debug("Job is being executed with no delay")
+            self.stopping.wait(delay_seconds)
 
         self.log.info("Job thread stopped")
 
@@ -91,7 +86,7 @@ class _JobThread(Thread):
 class Coordinator(Thread):
     def __init__(self):
         self._evt = Event()
-        self._workers: List[_JobThread] = []
+        self._workers: List[JobThread] = []
         self._lock = Lock()
         self.log = logger.bind(thread="coordinator")
 
@@ -118,7 +113,7 @@ class Coordinator(Thread):
         """Add a job to the list of running jobs"""
 
         with self._lock:
-            thread = _JobThread(job, self._evt)
+            thread = JobThread(job, self._evt)
             self._workers.append(thread)
             thread.start()
 
