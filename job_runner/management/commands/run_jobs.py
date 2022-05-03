@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand, CommandParser
 
 from structlog import get_logger
 
-from job_runner.singlton import discover_jobs
+from job_runner.singlton import auto_import_jobs
 from job_runner.runner import JobThread
 
 logger = get_logger(__name__)
@@ -96,7 +96,7 @@ class Command(BaseCommand):
     ):
         log = logger.bind()
 
-        full_job_list = discover_jobs()
+        full_job_list = auto_import_jobs()
         to_execute = full_job_list[:]
 
         if include_jobs:

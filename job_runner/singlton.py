@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 _tracker = JobTracker()
 
 
-def discover_jobs() -> List[RegisteredJob]:
+def auto_import_jobs() -> List[RegisteredJob]:
     """Import all jobs into the global tracker"""
 
     for app_name in settings.INSTALLED_APPS:

@@ -7,7 +7,7 @@ import pytest
 
 from example_app.jobs import sample_job_1
 from job_runner.environment import RunEnv
-from .singlton import discover_jobs
+from .singlton import auto_import_jobs
 from .tracker import AutoTime, RegisteredJob, JobTracker
 
 TIME_EQUIVALENCIES: List[Tuple[AutoTime, timedelta]] = [
@@ -25,7 +25,7 @@ def test_global_scheduler():
         func=sample_job_1,
     )
 
-    assert expected_job in discover_jobs()
+    assert expected_job in auto_import_jobs()
 
 
 def test_schedule_job():
