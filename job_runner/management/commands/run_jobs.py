@@ -2,20 +2,19 @@
 
 from datetime import timedelta
 import os
-from statistics import variance
 import sys
 from threading import Event
 from random import random
 import signal
 from threading import Thread
-from typing import Callable, List, Optional
+from typing import Callable, Iterable, List, Optional
 
 from django.core.management.base import BaseCommand, CommandParser
 
 from structlog import get_logger
 
 from job_runner.singlton import discover_jobs
-from job_runner.runner import Coordinator
+from job_runner.runner import JobThread
 
 logger = get_logger(__name__)
 
@@ -90,7 +89,7 @@ class Command(BaseCommand):
         include_jobs: List[str] = [],
         exclude_jobs: List[str] = [],
         *args,
-        **options
+        **kwargs
     ):
         log = logger.bind()
 
@@ -123,82 +122,67 @@ class Command(BaseCommand):
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
 
-        coordinator = Coordinator()
-        coordinator.start()
+        threads = []
 
-        try:
-            for job in to_execute:
-                log.info("Adding job", job_name=job.name)
-                coordinator.add(job)
-
-        except Exception as exc:
-            log.exception("Got exception when adding jobs", error=str(exc))
-            coordinator.request_stop()
-            coordinator.join(stop_timeout)
-
-            if coordinator.is_alive():
-                log.error("Coordinator stop timeout exceeded, forcing exit")
-                os._exit(1)
-
-            sys.exit(1)
+        for job in to_execute:
+            runner = JobThread(job, request_stop)
+            threads.append(runner)
+            runner.start()
 
         # The coordinator has started successfully
         if stop_after:
             min_runtime = timedelta(seconds=stop_after)
 
             final_delay = stop_after + random() * stop_variance
-            log.info("Adding stop watcher after %d seconds", final_delay)
+            log.info("Job runner stop registered", run_time=final_delay)
 
-            CancelableDelay(
-                final_delay, request_stop.set, request_stop, name="Job stop delay"
-            ).start()
+            _EventSetter(timedelta(seconds=final_delay), request_stop).start()
 
             for job in to_execute:
                 if job.variance > min_runtime:
                     log.warning(
                         "Job runner may be stopped before job executes",
                         job_name=job.name,
-                        maximum_interval=job.maximum_interval.total_seconds(),
+                        maximum_interval=job.variance.total_seconds(),
                         min_runtime=min_runtime.total_seconds(),
                     )
 
-        log.info("Job runner has finished startup")
+        log.info("All jobs have been started")
         request_stop.wait()
         log.info("Beginning job runner shutdown")
 
-        coordinator.request_stop()
+        waiter = _ThreadWaiter(threads)
+        waiter.start()
 
-        coordinator.join(stop_timeout)
-        if coordinator.is_alive():
-            log.error("Coordinator did not shut down, forcing exit")
+        log.info("Waiting for all job stop", timeout=stop_timeout)
+        waiter.join(stop_timeout)
+
+        if waiter.is_alive():
+            log.error("Job threads did not shut down, forcing exit")
             os._exit(1)
 
 
-class CancelableDelay(Thread):
-    """A thread that will run a callback after a
-    certain amount of time unless it is canceled"""
+class _EventSetter(Thread):
+    """Set an event after some amount of time"""
 
-    def __init__(
-        self,
-        delay: float,
-        cb: Callable[[], None],
-        cancel: Event,
-        name: Optional[str] = None,
-    ):
+    def __init__(self, delay: timedelta, evt: Event):
+        self.delay = delay
+        self.evt = evt
         super().__init__()
-        self._delay = delay
-        self._cb = cb
-        self._cancel = cancel
-        self._log = logger.bind()
-        if name:
-            self._log = self._log.bind(name=name)
 
     def run(self):
-        self._log.debug("Beginning execution")
-        self._cancel.wait(self._delay)
-        if self._cancel.is_set():
-            self._log.debug("Execution canceled")
-            return
+        self.evt.wait(self.delay.total_seconds())
+        self.evt.set()
 
-        self._log.info("Timeout threshold met")
-        self._cb()
+
+class _ThreadWaiter(Thread):
+    """Wait for a number of additional threads"""
+
+    def __init__(self, threads: Iterable[Thread]):
+        self.threads = threads
+
+        super().__init__()
+
+    def run(self):
+        for t in self.threads:
+            t.join()
