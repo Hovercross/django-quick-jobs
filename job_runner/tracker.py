@@ -1,6 +1,6 @@
 """Tracking utils for job runner"""
 
-from typing import List, Protocol
+from typing import List, Callable
 from datetime import timedelta
 from dataclasses import dataclass
 from threading import Lock
@@ -8,19 +8,21 @@ from threading import Lock
 from .environment import RunEnv
 from .time import AutoTime, read_auto_time
 
-
-class Job(Protocol):
-    def __call__(self, env: RunEnv) -> None:
-        """Call a job with the environment"""
+Job = Callable[[RunEnv], None]
 
 
-@dataclass(frozen=True)
 class RegisteredJob:
     """A job that has been registered to be run periodically"""
 
-    interval: timedelta
-    variance: timedelta
-    func: Job
+    def __init__(
+        self,
+        interval: timedelta,
+        variance: timedelta,
+        func: Job,
+    ):
+        self.interval = interval
+        self.variance = variance
+        self.func = func
 
     @property
     def name(self):
