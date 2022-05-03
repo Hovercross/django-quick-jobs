@@ -20,22 +20,52 @@ class RegisteredJob:
         variance: timedelta,
         func: Job,
     ):
-        self.interval = interval
-        self.variance = variance
-        self.func = func
+        self._interval = interval
+        self._variance = variance
+        self._func = func
 
     @property
     def name(self):
         """The full name of the function to be called"""
-        return f"{self.func.__module__}.{self.func.__name__}"
+        return f"{self._func.__module__}.{self._func.__name__}"
 
     @property
     def maximum_interval(self) -> timedelta:
-        return self.interval + self.variance
+        return self._interval + self._variance
 
     @property
     def minimum_interval(self) -> timedelta:
-        return self.interval
+        return self._interval
+
+    @property
+    def interval(self) -> timedelta:
+        return self._interval
+
+    @property
+    def variance(self) -> timedelta:
+        return self._variance
+
+    @property
+    def func(self) -> Job:
+        return self._func
+
+    def __eq__(self, other):
+        if not isinstance(other, RegisteredJob):
+            return False
+
+        if self._func != other._func:
+            return False
+
+        if self._interval != other._interval:
+            return False
+
+        if self._variance != other._variance:
+            return False
+
+        return True
+
+    def __hash__(self):
+        return hash(hash(self._func) + hash(self._interval) + hash(self._variance))
 
 
 class JobTracker:
