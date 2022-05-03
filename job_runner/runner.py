@@ -1,10 +1,9 @@
 """The coordinator is responsible for running all jobs"""
 
 from datetime import timedelta
-from typing import List
 
 from random import random
-from threading import Thread, Event, Lock
+from threading import Thread, Event
 
 from django.utils import timezone
 
