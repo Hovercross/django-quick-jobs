@@ -96,3 +96,45 @@ jobs:
         run: pip install Django=="${{ matrix.django-version }}"
       - name: Run sample job
         run: python manage.py run_jobs --stop-after=1 --include-job "example_app.jobs.sample_job_1"
+  
+  run_timeout:
+    runs-on: ubuntu-latest
+    env:
+      POETRY_VIRTUALENVS_CREATE: false
+    strategy:
+      matrix:
+        python-version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+        django-version:
+          - 2.2.*
+          - 3.0.*
+          - 3.1.*
+          - 3.2.*
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python version ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        run: |
+          python -m ensurepip
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+      
+      - name: Set up dependencies
+        run: python -m poetry install
+      - name: Re-install specific Django version
+        run: pip install Django=="${{ matrix.django-version }}"
+      - name: Run job that expects to run forever
+        run: |
+          python manage.py run_jobs --stop-after=1 --include-job "example_app.run_forever_job.run_forever"
+          if [[ $? -ne 1 ]]; then
+            exit 1;
+          fi
+
+          exit 0
