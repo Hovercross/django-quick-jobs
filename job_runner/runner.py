@@ -31,41 +31,6 @@ class JobThread(Thread):
 
         super().__init__()
 
-    def _cleanup(self):
-        django.db.close_old_connections()
-
-    def _conditional_cleanup(self):
-        self.log.debug("Beginning conditional cleanup")
-        if timezone.now() < self._next_cleanup:
-            self.log.debug("Cleanup not ready")
-            return
-
-        self.log.info("Running cleanup")
-
-        self._cleanup()
-        self._next_cleanup = _random_time(1, 0)
-
-    def _conditional_run(self):
-        self.log.debug("Beginning conditional run")
-        if timezone.now() < self._next_run:
-            self.log.debug("Not ready to run")
-            return
-
-        self.log.info("Beginning job execution")
-
-        started_at = timezone.now()
-        env = self._run_once()
-
-        # The default
-        self._next_run = _random_time(self.job.interval, self.job.variance, started_at)
-
-        if env.requested_rerun:
-            # Override next run to go now
-            self.log.debug("Job requested rerun without delay")
-            self._next_run = timezone.now()
-
-        self.log.info("Job execution finished successfully", next_run=self._next_run)
-
     @property
     def _next_event(self) -> datetime:
         """Figure out the next time anything happens"""
@@ -76,18 +41,50 @@ class JobThread(Thread):
     def _next_event_delay(self) -> timedelta:
         return max(self._next_event - timezone.now(), timedelta(0))
 
-    def _run_once(self) -> TrackerEnv:
+    def _conditional_cleanup(self):
+        self.log.debug("Beginning conditional cleanup")
+        if timezone.now() < self._next_cleanup:
+            self.log.debug("Cleanup not ready")
+            return
+
+        self._cleanup_once()
+
+    def _conditional_run(self):
+        self.log.debug("Beginning conditional run")
+        if timezone.now() < self._next_run:
+            self.log.debug("Not ready to run")
+            return
+
+        self._run_once()
+
+    def _cleanup_once(self):
+        self.log.info("Running cleanup")
+        django.db.close_old_connections()
+        self._next_cleanup = _random_time(30, 5)
+
+    def _run_once(self):
         self.log.info("Job starting")
 
         run_env, tracker_env = get_environments(self.stopping)
+        started_at = timezone.now()
 
         try:
+            django.db.reset_queries()  # This is normally run before each request
             self.job(run_env)
             self.log.info("Job finished successfully")
         except Exception as exc:
             self.log.exception("Finished job with exception", error=str(exc))
 
-        return tracker_env
+        # The default is to obey the job mechanics
+        self._next_run = _random_time(self.job.interval, self.job.variance, started_at)
+
+        if tracker_env.requested_rerun:
+            # Override next run to go immediately if the job requests it
+            self.log.debug("Job requested rerun without delay")
+            self._next_run = timezone.now()
+
+        self._cleanup_once()
+        self.log.info("Job execution finished successfully", next_run=self._next_run)
 
     def run(self):
         self.log.info(
