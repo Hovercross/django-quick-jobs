@@ -77,6 +77,3 @@ class JobThread(Thread):
             self.stopping.wait(delay_seconds)
 
         self.log.info("Job thread stopped")
-
-    def request_stop(self):
-        self.stopping.set()
