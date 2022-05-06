@@ -10,25 +10,25 @@ from . import models
 # Run this job periodically - at most every 30 seconds and at least every 60 seconds
 @register_job(5, 0)
 def sample_job_1(env: RunEnv):
-    print(f"test_job_1 is getting called at {datetime.now()}")
+    print(f"sample_job_1 is getting called at {datetime.now()}")
 
 
 # Run this job periodically - at most every 60 seconds and at least every 180 seconds
 @register_job(60, 120)
 def sample_job_2(env: RunEnv):
-    print(f"test_job_2 is getting called at {datetime.now()}")
+    print(f"sample_job_2 is getting called at {datetime.now()}")
 
 
 @register_job(1, 0)
 def sample_job_3(env: RunEnv):
-    print(f"test_job_3 is getting called at {datetime.now()}")
+    print(f"sample_job_3 is getting called at {datetime.now()}")
 
     env.wait_for_stop_request(5)
 
 
 @register_job(60, 0)
 def sample_job_4(env: RunEnv):
-    print(f"test_job_4 is getting called at {datetime.now()}")
+    print(f"sample_job_4 is getting called at {datetime.now()}")
 
     env.wait_for_stop_request(5.8)
     if env.is_stopping:

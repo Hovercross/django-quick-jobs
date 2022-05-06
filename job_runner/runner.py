@@ -117,18 +117,18 @@ class JobThread(Thread):
 
             self.log.exception("Finished job with exception", error=str(exc))
 
+        now = time.monotonic()
+        execution_time = now - started_at
+
+        interval = self.job.interval.total_seconds()
+        variance = self.job.variance.total_seconds() * random()
         # The default is to obey the job mechanics
-        self._next_run = (
-            time.monotonic()
-            + self.job.interval.total_seconds()
-            - started_at
-            + self.job.variance.total_seconds() * random()
-        )
+        self._next_run = now + interval + variance - execution_time
 
         if tracker_env.requested_rerun:
             # Override next run to go immediately if the job requests it
             self.log.debug("Job requested rerun without delay")
-            self._next_run = time.monotonic()
+            self._next_run = now
 
         if tracker_env.requested_stop:
             self.log.warning("Job requested stop")
@@ -137,9 +137,10 @@ class JobThread(Thread):
         self._cleanup_database()
         self._schedule_next_db_cleanup()
         self.log.info(
-            "Job execution finished successfully",
+            "Job execution finished",
             next_run=self._next_run,
-            now=time.monotonic(),
+            execution_time=execution_time,
+            now=now,
         )
 
     def _run(self):
@@ -159,8 +160,6 @@ class JobThread(Thread):
 
             self._conditional_run()
             self._conditional_cleanup()
-
-            raise Exception("What happened!")
 
         self.log.info("Job thread stopped")
 

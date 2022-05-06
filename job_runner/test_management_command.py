@@ -45,7 +45,7 @@ def test_management_command_simple_execution():
 def test_run_forever_bail():
     run_forever_event.clear()  # reset
 
-    with pytest.raises(CommandError):
+    with pytest.raises(SystemExit):
         call_command(
             "run_jobs",
             "--stop-after",
