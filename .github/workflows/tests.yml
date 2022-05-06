@@ -3,7 +3,7 @@ on:
   - pull_request
 
 jobs:
-  lint:
+  Lint:
     runs-on: ubuntu-latest
     env:
       POETRY_VIRTUALENVS_CREATE: false
@@ -24,7 +24,7 @@ jobs:
       - name: Run black
         run: black --check --diff job_runner/
   
-  mypy:
+  MyPy:
     runs-on: ubuntu-latest
     env:
       POETRY_VIRTUALENVS_CREATE: false
@@ -45,7 +45,7 @@ jobs:
       - name: Run mypy
         run: mypy job_runner/
 
-  pytest:
+  Automated Test Suite:
     runs-on: ubuntu-latest
     env:
       POETRY_VIRTUALENVS_CREATE: false
