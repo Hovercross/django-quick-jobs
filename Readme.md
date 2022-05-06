@@ -20,11 +20,11 @@ INSTALLED_APPS = [
 from datetime import datetime
 
 from job_runner.registration import register_job
-from job_runner.environment import RunEnvironment
+from job_runner.environment import RunEnv
 
 # Run this job periodically - at most every 10 seconds and at least every 60 seconds
 @register_job(10, 50)
-def my_great_job(env: RunEnvironment):
+def my_great_job(env: RunEnv):
     print(f"My great job is getting called at {datetime.now()}")
 ```
 
@@ -51,7 +51,7 @@ For most use cases no additional command line flags need to be set.
 
 ## The job run environment
 
-Every job that is being run will be passed an instance of `job_runner.environments.RunEnvironment`. This environment gives the job instance the ability to interact with the job runner in limited ways.
+Every job that is being run will be passed an instance of `job_runner.environments.RunEnv`. This environment gives the job instance the ability to interact with the job runner in limited ways.
 
 The following functions and properties are exposed for use in the run environment:
 
