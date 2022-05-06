@@ -1,7 +1,7 @@
 """Command line interface to the job runner"""
 
 from datetime import timedelta
-import os
+import time
 import sys
 from threading import Event
 from random import random
@@ -170,7 +170,7 @@ class Command(BaseCommand):
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
 
-        threads = []
+        threads: List[JobThread] = []
 
         for job in jobs:
             runner = JobThread(job, request_stop, on_fatal)
@@ -188,15 +188,15 @@ class Command(BaseCommand):
         request_stop.wait()
         log.info("Beginning job runner shutdown")
 
-        waiter = _ThreadWaiter(threads)
-        waiter.start()
-
+        shutdown_started_at = time.monotonic()
         log.info("Waiting for all jobs to stop", timeout=stop_timeout)
-        waiter.join(stop_timeout)
 
-        if waiter.is_alive():
-            log.error("Job threads did not shut down, forcing exit")
-            sys.exit(1)
+        for thread in threads:
+            time_left = stop_timeout - (time.monotonic() - shutdown_started_at)
+
+            thread.join(timeout=time_left)
+            if thread.is_alive():
+                log_alive_threads_and_exit(log, threads)
 
         log.info("All jobs have stopped")
 
@@ -216,20 +216,6 @@ class _EventSetter(Thread):
     def run(self):
         self.evt.wait(self.delay.total_seconds())
         self.evt.set()
-
-
-class _ThreadWaiter(Thread):
-    """Wait for a number of additional threads"""
-
-    def __init__(self, threads: Iterable[Thread]):
-        self.threads = threads
-
-        super().__init__()
-        self.setDaemon(True)
-
-    def run(self):
-        for t in self.threads:
-            t.join()
 
 
 class _Flag:
@@ -276,3 +262,11 @@ def get_jobs_for_excluded_names(names: Set[str]) -> Set[RegisteredJob]:
     default_jobs = import_default_jobs()
 
     return {job for job in default_jobs if job.name not in names}
+
+
+def log_alive_threads_and_exit(log, threads: Iterable[JobThread]):
+    for thread in threads:
+        if thread.is_alive():
+            log.error("Job thread is still alive", job_name=thread.job.name)
+
+    sys.exit(1)
