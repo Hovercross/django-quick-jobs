@@ -59,6 +59,8 @@ class JobThread(Thread):
 
     def _cleanup_once(self):
         self.log.info("Running cleanup")
+        # Near as I can tell, the connection handler is thread local,
+        # so this does need to be run for every different job
         django.db.close_old_connections()
         self._next_cleanup = _random_time(30, 5)
 
