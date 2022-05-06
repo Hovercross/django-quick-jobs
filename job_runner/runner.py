@@ -111,6 +111,10 @@ class JobThread(Thread):
             self.job(run_env)
             self.log.info("Job finished successfully")
         except Exception as exc:
+            if tracker_env.requested_fatal_errors:
+                self.log.warning("Job requested fatal errors, propagating error")
+                raise exc
+
             self.log.exception("Finished job with exception", error=str(exc))
 
         # The default is to obey the job mechanics
@@ -155,6 +159,8 @@ class JobThread(Thread):
 
             self._conditional_run()
             self._conditional_cleanup()
+
+            raise Exception("What happened!")
 
         self.log.info("Job thread stopped")
 

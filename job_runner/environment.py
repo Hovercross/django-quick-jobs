@@ -11,6 +11,7 @@ class _Env:
         self.stop_event = stop_event
         self.request_immediate_rerun = False
         self.requested_stop = False
+        self.requested_fatal_errors = False
 
 
 class TrackerEnv:
@@ -26,6 +27,10 @@ class TrackerEnv:
     @property
     def requested_stop(self):
         return self._env.requested_stop
+
+    @property
+    def requested_fatal_errors(self):
+        return self._env.requested_fatal_errors
 
 
 class RunEnv:
@@ -47,6 +52,10 @@ class RunEnv:
 
     def request_stop(self):
         self._env.requested_stop = True
+
+    def request_fatal_errors(self):
+        """Request that errors get thrown up and become fatal"""
+        self._env.requested_fatal_errors = True
 
     @property
     def is_stopping(self) -> bool:
