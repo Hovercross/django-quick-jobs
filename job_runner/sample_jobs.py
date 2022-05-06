@@ -28,7 +28,7 @@ def fatal(env: RunEnv):
     raise Exception("I'm in danger!")
 
 
-@register_job(30)
+@register_job(5)
 def exception(env: RunEnv):
     """A sample job that throws an exception"""
 
