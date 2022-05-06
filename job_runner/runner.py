@@ -1,12 +1,10 @@
 """The coordinator is responsible for running all jobs"""
 
-from datetime import datetime, timedelta
-
 from random import random
 from threading import Thread, Event
-from typing import Optional
+import time
+from typing import List, Optional
 
-from django.utils import timezone
 import django.db
 
 from job_runner.environment import get_environments
@@ -26,24 +24,34 @@ class JobThread(Thread):
         self.stopping = stop_event
         self.log = logger.bind(job_name=self.job.name)
 
+        self._clock = time.monotonic()
+
         self._next_run = _random_time(0, job.variance)
-        self._next_cleanup = _random_time(30, 5)
+        self._next_cleanup: Optional[float] = None
 
         super().__init__()
 
     @property
-    def _next_event(self) -> datetime:
+    def _next_event(self) -> float:
         """Figure out the next time anything happens"""
 
-        return min(self._next_cleanup, self._next_run)
+        if self._next_cleanup:
+            return min(self._next_cleanup, self._next_run)
+
+        return self._next_run
 
     @property
-    def _next_event_delay(self) -> timedelta:
-        return max(self._next_event - timezone.now(), timedelta(0))
+    def _next_event_delay(self) -> float:
+        return max(self._next_event - time.monotonic(), 0)
 
     def _conditional_cleanup(self):
         self.log.debug("Beginning conditional cleanup")
-        if timezone.now() < self._next_cleanup:
+
+        if not self._next_cleanup:
+            self.log.debug("Cleanup not scheduled")
+            return
+
+        if time.monotonic() < self._next_cleanup:
             self.log.debug("Cleanup not ready")
             return
 
@@ -51,7 +59,7 @@ class JobThread(Thread):
 
     def _conditional_run(self):
         self.log.debug("Beginning conditional run")
-        if timezone.now() < self._next_run:
+        if time.monotonic() < self._next_run:
             self.log.debug("Not ready to run")
             return
 
@@ -59,16 +67,41 @@ class JobThread(Thread):
 
     def _cleanup_once(self):
         self.log.info("Running cleanup")
+
         # Near as I can tell, the connection handler is thread local,
         # so this does need to be run for every different job
         django.db.close_old_connections()
-        self._next_cleanup = _random_time(30, 5)
+        self._next_cleanup = None
+
+    def _schedule_next_db_cleanup(self):
+        delays: List[int] = []
+
+        for conn_name in django.db.connections:
+            conn = django.db.connections[conn_name]
+            max_age = conn.settings_dict["CONN_MAX_AGE"]
+            if not max_age:
+                continue
+
+            delays.append(max_age)
+
+        if not delays:
+            return
+
+        # Add a little pad to account for clock weirdness, since Django uses time.monotonic to
+        # track when it needs to clean up
+        delay = min(delays)
+        self._next_cleanup = time.monotonic() + delay
+        self.log.debug(
+            "Scheduling database cleanup",
+            next_run=self._next_cleanup,
+            now=time.monotonic(),
+        )
 
     def _run_once(self):
         self.log.info("Job starting")
 
         run_env, tracker_env = get_environments(self.stopping)
-        started_at = timezone.now()
+        started_at = time.monotonic()
 
         try:
             django.db.reset_queries()  # This is normally run before each request
@@ -83,10 +116,15 @@ class JobThread(Thread):
         if tracker_env.requested_rerun:
             # Override next run to go immediately if the job requests it
             self.log.debug("Job requested rerun without delay")
-            self._next_run = timezone.now()
+            self._next_run = time.monotonic()
 
         self._cleanup_once()
-        self.log.info("Job execution finished successfully", next_run=self._next_run)
+        self._schedule_next_db_cleanup()
+        self.log.info(
+            "Job execution finished successfully",
+            next_run=self._next_run,
+            now=time.monotonic(),
+        )
 
     def run(self):
         self.log.info(
@@ -97,8 +135,8 @@ class JobThread(Thread):
 
         while not self.stopping.is_set():
             delay = self._next_event_delay
-            self.log.debug("Delaying thread loop", delay=delay.total_seconds())
-            self.stopping.wait(delay.total_seconds())
+            self.log.debug("Delaying thread loop", delay=delay)
+            self.stopping.wait(delay)
 
             self._conditional_run()
             self._conditional_cleanup()
@@ -107,10 +145,10 @@ class JobThread(Thread):
 
 
 def _random_time(
-    fixed: AutoTime, variance: AutoTime, base: Optional[datetime] = None
-) -> datetime:
-    _fixed = auto_time_default(fixed)
-    _variance = auto_time_default(variance)
-    _base = base and base or timezone.now()
+    fixed: AutoTime, variance: AutoTime, base: Optional[float] = None
+) -> float:
+    _fixed = auto_time_default(fixed).total_seconds()
+    _variance = auto_time_default(variance).total_seconds()
+    _base = base and base or time.monotonic()
 
     return _base + _fixed + _variance * random()
