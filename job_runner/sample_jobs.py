@@ -33,3 +33,8 @@ def exception(env: RunEnv):
     """A sample job that throws an exception"""
 
     raise Exception("I'm not in that much danger")
+
+
+@register_job()
+def invalid():
+    print("Invalid job is being called")
