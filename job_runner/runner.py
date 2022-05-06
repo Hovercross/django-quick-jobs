@@ -9,7 +9,6 @@ import django.db
 
 from job_runner.environment import get_environments
 from job_runner.registration import RegisteredJob
-from job_runner.time import AutoTime, auto_time_default
 
 from structlog import get_logger
 
@@ -24,10 +23,8 @@ class JobThread(Thread):
         self.stopping = stop_event
         self.log = logger.bind(job_name=self.job.name)
 
-        self._clock = time.monotonic()
-
-        self._next_run = _random_time(0, job.variance)
-        self._next_cleanup: Optional[float] = None
+        self._next_run = job.variance.total_seconds() * random()
+        self._next_database_cleanup: Optional[float] = None
 
         super().__init__()
 
@@ -35,8 +32,8 @@ class JobThread(Thread):
     def _next_event(self) -> float:
         """Figure out the next time anything happens"""
 
-        if self._next_cleanup:
-            return min(self._next_cleanup, self._next_run)
+        if self._next_database_cleanup:
+            return min(self._next_database_cleanup, self._next_run)
 
         return self._next_run
 
@@ -47,15 +44,15 @@ class JobThread(Thread):
     def _conditional_cleanup(self):
         self.log.debug("Beginning conditional cleanup")
 
-        if not self._next_cleanup:
+        if not self._next_database_cleanup:
             self.log.debug("Cleanup not scheduled")
             return
 
-        if time.monotonic() < self._next_cleanup:
+        if time.monotonic() < self._next_database_cleanup:
             self.log.debug("Cleanup not ready")
             return
 
-        self._cleanup_once()
+        self._cleanup_database()
 
     def _conditional_run(self):
         self.log.debug("Beginning conditional run")
@@ -65,13 +62,13 @@ class JobThread(Thread):
 
         self._run_once()
 
-    def _cleanup_once(self):
+    def _cleanup_database(self):
         self.log.info("Running cleanup")
 
         # Near as I can tell, the connection handler is thread local,
         # so this does need to be run for every different job
         django.db.close_old_connections()
-        self._next_cleanup = None
+        self._next_database_cleanup = None
 
     def _schedule_next_db_cleanup(self):
         delays: List[int] = []
@@ -90,10 +87,10 @@ class JobThread(Thread):
         # Add a little pad to account for clock weirdness, since Django uses time.monotonic to
         # track when it needs to clean up
         delay = min(delays)
-        self._next_cleanup = time.monotonic() + delay
+        self._next_database_cleanup = time.monotonic() + delay
         self.log.debug(
             "Scheduling database cleanup",
-            next_run=self._next_cleanup,
+            next_run=self._next_database_cleanup,
             now=time.monotonic(),
         )
 
@@ -111,14 +108,18 @@ class JobThread(Thread):
             self.log.exception("Finished job with exception", error=str(exc))
 
         # The default is to obey the job mechanics
-        self._next_run = _random_time(self.job.interval, self.job.variance, started_at)
+        self._next_run = (
+            time.monotonic()
+            + self.job.interval.total_seconds()
+            + self.job.variance.total_seconds() * random()
+        )
 
         if tracker_env.requested_rerun:
             # Override next run to go immediately if the job requests it
             self.log.debug("Job requested rerun without delay")
             self._next_run = time.monotonic()
 
-        self._cleanup_once()
+        self._cleanup_database()
         self._schedule_next_db_cleanup()
         self.log.info(
             "Job execution finished successfully",
@@ -142,13 +143,3 @@ class JobThread(Thread):
             self._conditional_cleanup()
 
         self.log.info("Job thread stopped")
-
-
-def _random_time(
-    fixed: AutoTime, variance: AutoTime, base: Optional[float] = None
-) -> float:
-    _fixed = auto_time_default(fixed).total_seconds()
-    _variance = auto_time_default(variance).total_seconds()
-    _base = base and base or time.monotonic()
-
-    return _base + _fixed + _variance * random()
