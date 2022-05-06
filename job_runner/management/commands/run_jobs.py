@@ -162,8 +162,6 @@ class Command(BaseCommand):
             runner.start()
 
         if stop_after:
-            min_runtime = timedelta(seconds=stop_after)
-
             final_delay = stop_after + stop_variance * random()
             log.info("Job runner stop registered", run_time=final_delay)
 
@@ -181,7 +179,7 @@ class Command(BaseCommand):
 
         if waiter.is_alive():
             log.error("Job threads did not shut down, forcing exit")
-            raise CommandError("Job stop timeout reached")
+            sys.exit(1)
 
         if got_fatal.is_set:
             sys.exit(1)
