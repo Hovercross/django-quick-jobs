@@ -119,6 +119,9 @@ class JobThread(Thread):
             self.log.debug("Job requested rerun without delay")
             self._next_run = time.monotonic()
 
+        if tracker_env.requested_restart:
+            self.stopping.set()
+
         self._cleanup_database()
         self._schedule_next_db_cleanup()
         self.log.info(
