@@ -25,7 +25,13 @@ def run_forever(env: RunEnv):
 
 
 def test_management_command_smoke():
-    call_command("run_jobs", stop_after=1)
+    call_command(
+        "run_jobs",
+        "--include-job",
+        "job_runner.sample_jobs.sample_job_1",
+        "--stop-after",
+        "1",
+    )
 
 
 def test_management_command_simple_execution():
