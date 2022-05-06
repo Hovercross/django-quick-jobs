@@ -143,6 +143,9 @@ class JobThread(Thread):
             self.log.debug("Delaying thread loop", delay=delay)
             self.stopping.wait(delay)
 
+            if self.stopping.is_set():
+                return
+
             self._conditional_run()
             self._conditional_cleanup()
 
