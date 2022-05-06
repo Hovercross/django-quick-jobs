@@ -3,8 +3,7 @@
 from threading import Event
 from typing import Tuple
 
-from job_runner.time import AutoTime, read_auto_time
-from datetime import timedelta
+from job_runner.time import AutoTime, auto_time_default
 
 
 class _Env:
@@ -34,7 +33,7 @@ class RunEnv:
     def wait_for_stop_request(self, timeout: AutoTime):
         """Wait for stop should be used instead of any sleeps"""
 
-        wait_time = read_auto_time(timeout, default=timedelta(seconds=0))
+        wait_time = auto_time_default(timeout)
 
         self._env.stop_event.wait(wait_time.total_seconds())
 

@@ -9,9 +9,9 @@ from typing import Optional
 from django.utils import timezone
 import django.db
 
-from job_runner.environment import TrackerEnv, get_environments
+from job_runner.environment import get_environments
 from job_runner.registration import RegisteredJob
-from job_runner.time import AutoTime, read_auto_time
+from job_runner.time import AutoTime, auto_time_default
 
 from structlog import get_logger
 
@@ -107,8 +107,8 @@ class JobThread(Thread):
 def _random_time(
     fixed: AutoTime, variance: AutoTime, base: Optional[datetime] = None
 ) -> datetime:
-    _fixed = read_auto_time(fixed) or timedelta(0)
-    _variance = read_auto_time(variance) or timedelta(0)
+    _fixed = auto_time_default(fixed)
+    _variance = auto_time_default(variance)
     _base = base and base or timezone.now()
 
     return _base + _fixed + _variance * random()

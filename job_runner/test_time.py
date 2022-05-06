@@ -4,7 +4,7 @@ from typing import List, Tuple
 from datetime import timedelta
 
 import pytest
-from .time import AutoTime, read_auto_time
+from .time import AutoTime, auto_time
 
 TIME_EQUIVALENCIES: List[Tuple[AutoTime, timedelta]] = [
     (30, timedelta(seconds=30)),
@@ -20,5 +20,5 @@ def test_time_equivalencies(
     input: AutoTime,
     expected: timedelta,
 ):
-    result = read_auto_time(input)
+    result = auto_time(input)
     assert result == expected

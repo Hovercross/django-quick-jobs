@@ -1,7 +1,7 @@
 """Tracking utils for job runner"""
 
 import importlib
-from typing import Callable, Iterable, Set
+from typing import Callable, Iterable, Optional, Set
 from datetime import timedelta
 
 from structlog import get_logger
@@ -9,7 +9,7 @@ from structlog import get_logger
 from django.conf import settings
 
 from .environment import RunEnv
-from .time import AutoTime, read_auto_time
+from .time import AutoTime, auto_time, auto_time_default
 
 Job = Callable[[RunEnv], None]
 
@@ -72,14 +72,16 @@ class RegisteredJob:
         return hash(hash(self._func) + hash(self._interval) + hash(self._variance))
 
 
-def register_job(interval: AutoTime = None, variance: AutoTime = None):
+def register_job(
+    interval: Optional[AutoTime] = None, variance: Optional[AutoTime] = None
+):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
         return RegisteredJob(
-            interval=read_auto_time(interval, default=timedelta()),
-            variance=read_auto_time(variance, default=timedelta()),
+            interval=auto_time_default(interval),
+            variance=auto_time_default(variance),
             func=func,
         )
 
