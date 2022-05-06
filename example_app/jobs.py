@@ -23,14 +23,14 @@ def sample_job_2(env: RunEnv):
 def sample_job_3(env: RunEnv):
     print(f"sample_job_3 is getting called at {datetime.now()}")
 
-    env.wait_for_stop_request(5)
+    env.sleep(5)
 
 
 @register_job(60, 0)
 def sample_job_4(env: RunEnv):
     print(f"sample_job_4 is getting called at {datetime.now()}")
 
-    env.wait_for_stop_request(5.8)
+    env.sleep(5.8)
     if env.is_stopping:
         print("Test job 4 got immediate stop request")
         return

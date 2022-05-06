@@ -6,6 +6,10 @@ from typing import Tuple
 from job_runner.time import AutoTime, auto_time_default
 
 
+class SleepInterrupted(Exception):
+    """An exception indicating that a thread sleep was interrupted"""
+
+
 class _Env:
     def __init__(self, stop_event: Event):
         self.stop_event = stop_event
@@ -40,12 +44,15 @@ class RunEnv:
     def __init__(self, env: _Env):
         self._env = env
 
-    def wait_for_stop_request(self, timeout: AutoTime):
+    def sleep(self, timeout: AutoTime):
         """Wait for stop should be used instead of any sleeps"""
 
         wait_time = auto_time_default(timeout)
 
         self._env.stop_event.wait(wait_time.total_seconds())
+
+        if self._env.stop_event.is_set():
+            raise SleepInterrupted()
 
     def request_rerun(self):
         self._env.request_immediate_rerun = True
