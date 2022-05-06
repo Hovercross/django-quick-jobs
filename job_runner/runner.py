@@ -111,6 +111,7 @@ class JobThread(Thread):
         self._next_run = (
             time.monotonic()
             + self.job.interval.total_seconds()
+            - started_at
             + self.job.variance.total_seconds() * random()
         )
 
