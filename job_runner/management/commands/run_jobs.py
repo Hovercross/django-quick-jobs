@@ -143,13 +143,20 @@ class Command(BaseCommand):
         def stop_signal_handler(*args, **kwargs):
             request_stop.set()
 
+        got_fatal = _Flag()
+
+        def on_fatal():
+            log.error("A job runner failed fatally")
+            got_fatal.set()
+            request_stop.set()
+
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
 
         threads = []
 
         for job in jobs:
-            runner = JobThread(job, request_stop)
+            runner = JobThread(job, request_stop, on_fatal)
             runner.setDaemon(True)
             threads.append(runner)
             runner.start()
@@ -175,6 +182,9 @@ class Command(BaseCommand):
         if waiter.is_alive():
             log.error("Job threads did not shut down, forcing exit")
             raise CommandError("Job stop timeout reached")
+
+        if got_fatal.is_set:
+            sys.exit(1)
 
 
 class _EventSetter(Thread):
@@ -202,6 +212,18 @@ class _ThreadWaiter(Thread):
     def run(self):
         for t in self.threads:
             t.join()
+
+
+class _Flag:
+    def __init__(self):
+        self._set = False
+
+    def set(self):
+        self._set = True
+
+    @property
+    def is_set(self):
+        return self._set
 
 
 class InvalidJobName(ValueError):

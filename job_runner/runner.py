@@ -3,7 +3,7 @@
 from random import random
 from threading import Thread, Event
 import time
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import django.db
 
@@ -18,9 +18,15 @@ logger = get_logger(__name__)
 class JobThread(Thread):
     """Runs a single job on a single schedule"""
 
-    def __init__(self, job: RegisteredJob, stop_event: Event):
+    def __init__(
+        self,
+        job: RegisteredJob,
+        stop: Event,
+        throw_error: Callable[[], None],
+    ):
         self.job = job
-        self.stopping = stop_event
+        self.stopping = stop
+        self._on_fatal = throw_error
         self.log = logger.bind(job_name=self.job.name)
 
         self._next_run = job.variance.total_seconds() * random()
@@ -132,7 +138,7 @@ class JobThread(Thread):
             now=time.monotonic(),
         )
 
-    def run(self):
+    def _run(self):
         self.log.info(
             "Starting job execution thread",
             interval=self.job.interval,
@@ -151,3 +157,13 @@ class JobThread(Thread):
             self._conditional_cleanup()
 
         self.log.info("Job thread stopped")
+
+    def run(self):
+        try:
+            self._run()
+        except Exception as exc:
+            # All exceptions from jobs should be caught in the job run method.
+            # An exception here indicates that something went wrong with
+            # the runner itself and is not anticipated to be recoverable.
+            self.log.exception("Error thrown in job thread", error=str(exc))
+            self._on_fatal()
