@@ -191,7 +191,7 @@ class Command(BaseCommand):
         waiter = _ThreadWaiter(threads)
         waiter.start()
 
-        log.info("Waiting for all job stop", timeout=stop_timeout)
+        log.info("Waiting for all jobs to stop", timeout=stop_timeout)
         waiter.join(stop_timeout)
 
         if waiter.is_alive():
