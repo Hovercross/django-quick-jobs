@@ -11,16 +11,6 @@ def sample_job_1(env: RunEnv):
 
 
 @register_job()
-def run_forever(env: RunEnv):
-    """A sample job that is badly behaved and will run forever"""
-
-    print(f"run_forever is getting called at {datetime.now()}")
-
-    while True:
-        time.sleep(1)
-
-
-@register_job()
 def fatal(env: RunEnv):
     """A sample job that requests a fatal exit"""
 
@@ -33,8 +23,3 @@ def exception(env: RunEnv):
     """A sample job that throws an exception"""
 
     raise Exception("I'm not in that much danger")
-
-
-@register_job()
-def invalid():
-    print("Invalid job is being called")
