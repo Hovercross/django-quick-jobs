@@ -106,7 +106,7 @@ jobs:
       - name: Re-install specific Django version
         run: pip install Django=="${{ matrix.django-version }}"
       - name: Run sample job
-        run: python manage.py run_jobs --stop-after=1 --include-job "example_app.jobs.sample_job_1"
+        run: python manage.py run_jobs --stop-after=1 --include-job "job_runner.sample_jobs.sample_job_1"
   
   execute_forever_running_job:
     runs-on: ubuntu-latest
