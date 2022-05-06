@@ -27,7 +27,6 @@ keywords = ["django", "tasks", "background"]
 python = ">=3.7,<4.0"
 Django = ">=2.2"
 structlog = "*"
-pytest-timeout = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.11b1"
@@ -38,6 +37,7 @@ pytest-django = "^4.5.1"
 pytest-cov = "^3.0.0"
 mypy = "^0.942"
 django-stubs = "^1.10.1"
+pytest-timeout = "^2.1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
