@@ -162,15 +162,6 @@ class Command(BaseCommand):
 
             _EventSetter(timedelta(seconds=final_delay), request_stop).start()
 
-            for job in jobs:
-                if job.variance > min_runtime:
-                    log.warning(
-                        "Job runner may be stopped before job executes",
-                        job_name=job.name,
-                        maximum_interval=job.variance.total_seconds(),
-                        min_runtime=min_runtime.total_seconds(),
-                    )
-
         log.info("All jobs have been started")
         request_stop.wait()
         log.info("Beginning job runner shutdown")
