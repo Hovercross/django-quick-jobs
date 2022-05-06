@@ -1,6 +1,9 @@
 """Tracking utils for job runner"""
 
 import importlib
+import inspect
+from threading import Event
+
 from typing import Callable, Iterable, Optional, Set
 from datetime import timedelta
 
@@ -8,7 +11,7 @@ from structlog import get_logger
 
 from django.conf import settings
 
-from .environment import RunEnv
+from .environment import RunEnv, get_environments
 from .time import AutoTime, auto_time, auto_time_default
 
 Job = Callable[[RunEnv], None]
@@ -41,6 +44,13 @@ class RegisteredJob:
     @property
     def variance(self) -> timedelta:
         return self._variance
+
+    def check_callable_valid(self):
+        # We don't need a "real" stop event since we aren't callint the function
+        sample_env, _ = get_environments(Event())
+        signature = inspect.signature(self._func)
+        # This will throw a type error if it isn't callable
+        signature.bind(sample_env)
 
     def __call__(self, env: RunEnv):
         return self._func(env)

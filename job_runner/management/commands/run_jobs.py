@@ -134,6 +134,23 @@ class Command(BaseCommand):
             log.error("There are no jobs to run, exiting")
             raise CommandError("There are no jobs to run")
 
+        jobs_ok = True
+        for job in jobs:
+            try:
+                job.check_callable_valid()
+            except TypeError as exc:
+                jobs_ok = False
+                log.error(
+                    "Job is not callable. "
+                    "Make sure the job takes one parameter of "
+                    "job_tracker.environment.RunEnv",
+                    job_name=job.name,
+                    error=str(exc),
+                )
+
+        if not jobs_ok:
+            sys.exit(1)
+
         if trial_run:
             return
 
