@@ -45,7 +45,7 @@ jobs:
       - name: Run mypy
         run: mypy job_runner/
 
-  automated-test-suite:
+  automated-tests:
     runs-on: ubuntu-latest
     env:
       POETRY_VIRTUALENVS_CREATE: false
@@ -77,9 +77,5 @@ jobs:
         run: python -m poetry install
       - name: Re-install specific Django version
         run: pip install Django=="${{ matrix.django-version }}"
-      - name: Run automated test suite
+      - name: Run automated tests
         run: pytest
-      - name: Run sample job
-        run: python manage.py run_jobs --stop-after=1 --include-job "job_runner.sample_jobs.sample_job_1"
-      - name: Run job that expects to run forever
-        run: ./test_run_forever_exit.sh

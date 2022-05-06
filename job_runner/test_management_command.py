@@ -61,6 +61,7 @@ def test_management_command_simple_execution():
     assert test_val
 
 
+@pytest.mark.timeout(15)
 def test_run_forever_bail():
     run_forever_event.clear()  # reset
 
@@ -69,6 +70,8 @@ def test_run_forever_bail():
             "run_jobs",
             "--stop-after",
             "1",
+            "--stop-timeout",
+            "5",
             "--include-job",
             "job_runner.test_management_command.run_forever",
         )
