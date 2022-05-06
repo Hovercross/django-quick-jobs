@@ -198,7 +198,10 @@ class Command(BaseCommand):
             log.error("Job threads did not shut down, forcing exit")
             sys.exit(1)
 
+        log.info("All jobs have stopped")
+
         if got_fatal.is_set:
+            log.warning("A fatal error was thrown from a job, exiting with code 1")
             sys.exit(1)
 
 
