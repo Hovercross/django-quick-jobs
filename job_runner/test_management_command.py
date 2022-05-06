@@ -29,6 +29,14 @@ def invalid():
     print("Invalid job is being called")
 
 
+@register_job()
+def fatal(env: RunEnv):
+    """A sample job that requests a fatal exit"""
+
+    env.request_fatal_errors()
+    raise Exception("I'm in danger!")
+
+
 def test_management_command_smoke():
     call_command(
         "run_jobs",
@@ -75,4 +83,13 @@ def test_invalid_job():
             "run_jobs",
             "--include-job",
             "job_runner.test_management_command.invalid",
+        )
+
+
+def test_fatal_job():
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--include-job",
+            "job_runner.test_management_command.fatal",
         )
