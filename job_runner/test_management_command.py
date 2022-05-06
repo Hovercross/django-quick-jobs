@@ -24,6 +24,11 @@ def run_forever(env: RunEnv):
     run_forever_event.wait()
 
 
+@register_job(1)
+def invalid():
+    print("Invalid job is being called")
+
+
 def test_management_command_smoke():
     call_command(
         "run_jobs",
@@ -62,3 +67,12 @@ def test_run_forever_bail():
 
     # clean up the thread by setting the event
     run_forever_event.set()
+
+
+def test_invalid_job():
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--include-job",
+            "job_runner.test_management_command.invalid",
+        )
