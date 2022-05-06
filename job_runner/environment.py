@@ -10,7 +10,7 @@ class _Env:
     def __init__(self, stop_event: Event):
         self.stop_event = stop_event
         self.request_immediate_rerun = False
-        self.requested_restart = False
+        self.requested_stop = False
 
 
 class TrackerEnv:
@@ -24,8 +24,8 @@ class TrackerEnv:
         return self._env.request_immediate_rerun
 
     @property
-    def requested_restart(self):
-        return self._env.requested_restart
+    def requested_stop(self):
+        return self._env.requested_stop
 
 
 class RunEnv:
@@ -45,8 +45,8 @@ class RunEnv:
     def request_rerun(self):
         self._env.request_immediate_rerun = True
 
-    def request_restart(self):
-        self._env.requested_restart = True
+    def request_stop(self):
+        self._env.requested_stop = True
 
     @property
     def is_stopping(self) -> bool:
