@@ -1,5 +1,6 @@
 """Tracking utils for job runner"""
 
+from enum import auto
 import importlib
 import inspect
 from threading import Event
@@ -74,15 +75,13 @@ class RegisteredJob:
         return hash(hash(self._func) + hash(self._interval) + hash(self._variance))
 
 
-def register_job(
-    interval: Optional[AutoTime] = None, variance: Optional[AutoTime] = None
-):
+def register_job(interval: AutoTime, variance: Optional[AutoTime] = None):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
         return RegisteredJob(
-            interval=auto_time_default(interval),
+            interval=auto_time(interval),
             variance=auto_time_default(variance),
             func=func,
         )

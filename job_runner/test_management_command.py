@@ -29,7 +29,7 @@ def invalid():
     print("Invalid job is being called")
 
 
-@register_job()
+@register_job(1)
 def fatal(env: RunEnv):
     """A sample job that requests a fatal exit"""
 

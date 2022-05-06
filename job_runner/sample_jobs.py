@@ -10,7 +10,7 @@ def sample_job_1(env: RunEnv):
     print(f"sample_job_1 is getting called at {datetime.now()}")
 
 
-@register_job()
+@register_job(1)
 def fatal(env: RunEnv):
     """A sample job that requests a fatal exit"""
 
