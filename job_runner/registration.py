@@ -35,14 +35,6 @@ class RegisteredJob:
         return f"{self._func.__module__}.{self._func.__name__}"
 
     @property
-    def maximum_interval(self) -> timedelta:
-        return self._interval + self._variance
-
-    @property
-    def minimum_interval(self) -> timedelta:
-        return self._interval
-
-    @property
     def interval(self) -> timedelta:
         return self._interval
 
