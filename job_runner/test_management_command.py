@@ -270,3 +270,16 @@ def test_paused_job():
         "--include-job",
         "job_runner.test_management_command.paused_job",
     )
+
+
+def test_bad_module_name():
+    """Make sure that a paused job through up through the job runner properly"""
+
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--stop-after",
+            "1",
+            "--include-job",
+            "pie",
+        )
