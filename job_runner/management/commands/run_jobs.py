@@ -174,7 +174,7 @@ class Command(BaseCommand):
 
         for job in jobs:
             runner = JobThread(job, request_stop, on_fatal)
-            runner.setDaemon(True)
+            runner.daemon = True
             threads.append(runner)
             runner.start()
 
