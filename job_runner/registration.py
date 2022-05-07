@@ -56,24 +56,6 @@ class RegisteredJob:
     def __call__(self, env: RunEnv):
         return self._func(env)
 
-    def __eq__(self, other):
-        if not isinstance(other, RegisteredJob):
-            return False
-
-        if self._func != other._func:
-            return False
-
-        if self._interval != other._interval:
-            return False
-
-        if self._variance != other._variance:
-            return False
-
-        return True
-
-    def __hash__(self):
-        return hash(hash(self._func) + hash(self._interval) + hash(self._variance))
-
 
 def register_job(interval: AutoTime, variance: Optional[AutoTime] = None):
     """Decorator to schedule the job to be run every
