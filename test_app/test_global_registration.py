@@ -1,5 +1,4 @@
 from datetime import timedelta
-from test_app.jobs import sample_job_1
 
 from job_runner.registration import import_default_jobs
 
