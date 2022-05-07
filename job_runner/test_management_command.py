@@ -3,8 +3,6 @@
 from threading import Event
 
 import pytest
-import structlog
-from structlog.testing import LogCapture
 
 from django.core.management import call_command
 
@@ -16,16 +14,6 @@ run_forever_event = Event()
 slow_job_count = 0
 fast_job_count = 0
 rerun_job_count = 0
-
-
-@pytest.fixture(name="log_output")
-def fixture_log_output():
-    return LogCapture()
-
-
-@pytest.fixture(autouse=True)
-def fixture_configure_structlog(log_output):
-    structlog.configure(processors=[log_output])
 
 
 @register_job(0)
@@ -243,7 +231,7 @@ def test_request_stop():
 
 
 @pytest.mark.timeout(10)
-def test_fatal_exception(log_output: LogCapture):
+def test_fatal_exception():
     with pytest.raises(SystemExit):
         call_command(
             "run_jobs",
@@ -255,9 +243,6 @@ def test_fatal_exception(log_output: LogCapture):
         "Error thrown in job thread",
         "Job requested fatal errors, propagating error",
     }
-
-    for expected_event in expected_events:
-        assert expected_event in (e["event"] for e in log_output.entries)
 
 
 def test_stopping_loop():
