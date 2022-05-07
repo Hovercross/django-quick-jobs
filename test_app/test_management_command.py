@@ -28,5 +28,9 @@ def test_no_jobs(log_output: LogCapture):
         args.append("--exclude-job")
         args.append(job.name)
 
+    expected_log_message = "There are no jobs to run"
+
     with pytest.raises(SystemExit):
         call_command(*args)
+
+    assert expected_log_message in (entry["event"] for entry in log_output.entries)
