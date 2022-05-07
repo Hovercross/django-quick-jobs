@@ -45,25 +45,15 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "plain_console",
-        },
-        "json_file": {
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": "json.log",
-            "formatter": "json_formatter",
-        },
-        "flat_line_file": {
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": "flat_line.log",
-            "formatter": "key_value",
-        },
+        }
     },
     "loggers": {
         "django_structlog": {
-            "handlers": ["console", "flat_line_file", "json_file"],
+            "handlers": ["console"],
             "level": "INFO",
         },
         "job_runner": {
-            "handlers": ["console", "flat_line_file", "json_file"],
+            "handlers": ["console"],
             "level": "DEBUG",
         },
     },
