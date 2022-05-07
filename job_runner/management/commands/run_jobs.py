@@ -9,7 +9,7 @@ import signal
 from threading import Thread
 from typing import Iterable, List, Set
 
-from django.core.management.base import BaseCommand, CommandParser, CommandError
+from django.core.management.base import BaseCommand, CommandParser
 
 from structlog import get_logger
 
@@ -131,7 +131,7 @@ class Command(BaseCommand):
         for job_name in include_jobs:
             if job_name not in job_names:
                 log.error("Included job does not exist", job_name=job_name)
-                raise CommandError(f"Job '{job_name}' does not exist")
+                sys.exit(1)
 
         if not jobs:
             log.error("There are no jobs to run")
