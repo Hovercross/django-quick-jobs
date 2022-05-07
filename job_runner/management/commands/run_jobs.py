@@ -17,7 +17,6 @@ from job_runner.runner import JobThread
 from job_runner.registration import (
     RegisteredJob,
     import_default_jobs,
-    import_jobs_from_module,
     import_jobs_from_modules,
 )
 
@@ -111,7 +110,11 @@ class Command(BaseCommand):
         log = logger.bind()
 
         if include_jobs:
-            jobs = get_jobs_for_included_names(set(include_jobs))
+            try:
+                jobs = get_jobs_for_included_names(set(include_jobs))
+            except InvalidJobName as exc:
+                log.error("Included job name was invalid", job_name=exc.job_name)
+                sys.exit(1)
         elif exclude_jobs:
             jobs = get_jobs_for_excluded_names(set(exclude_jobs))
         else:
@@ -131,8 +134,8 @@ class Command(BaseCommand):
                 raise CommandError(f"Job '{job_name}' does not exist")
 
         if not jobs:
-            log.error("There are no jobs to run, exiting")
-            raise CommandError("There are no jobs to run")
+            log.error("There are no jobs to run")
+            sys.exit(1)
 
         jobs_ok = True
         for job in jobs:
