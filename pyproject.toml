@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "django-quick-jobs"
+version = "0.1.0"
+description = "A method of quickly and simply running background jobs in a Django project"
+authors = ["Adam Peacock <adam@thepeacock.net>"]
+license = "MIT"
+packages = [
+    { include = "job_runner" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+include = [
+    "LICENSE"
+]
+readme = "Readme.md"
+homepage = "https://github.com/Hovercross/django-quick-jobs"
+repository = "https://github.com/Hovercross/django-quick-jobs"
+keywords = ["django", "tasks", "background"]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<4.0"
+Django = ">=2.2"
+structlog = "*"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+pylint = "*"
+rope = "*"
+pytest = "*"
+pytest-django = "*"
+pytest-cov = "*"
+mypy = "*"
+django-stubs = "*"
+pytest-timeout = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "test_project.settings"

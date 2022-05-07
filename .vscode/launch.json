@@ -1,0 +1,60 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run sample job",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_project/manage.py",
+            "args": [
+                "run_jobs",
+                "--include-job",
+                "job_runner.sample_jobs.sample_job_1"
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Run sample exception job",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_project/manage.py",
+            "args": [
+                "run_jobs",
+                "--include-job",
+                "job_runner.sample_jobs.exception"
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Run sample fatal job",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_project/manage.py",
+            "args": [
+                "run_jobs",
+                "--include-job",
+                "job_runner.sample_jobs.fatal"
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Run sample invalid job",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test_project/manage.py",
+            "args": [
+                "run_jobs",
+                "--include-job",
+                "job_runner.sample_jobs.invalid"
+            ],
+            "django": true,
+            "justMyCode": true
+        }
+    ]
+}
