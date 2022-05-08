@@ -83,23 +83,6 @@ def import_jobs_from_module(module_name: str) -> Iterable[RegisteredJob]:
             yield item
 
 
-def import_jobs_from_modules(module_names: Iterable[str]) -> Set[RegisteredJob]:
-    """Import jobs from a list of modules"""
-
-    out: Set[RegisteredJob] = set()
-
-    for module_name in module_names:
-        try:
-            for job in import_jobs_from_module(module_name):
-                out.add(job)
-        except ModuleNotFoundError:
-            logger.warning(
-                "Module was not found during import", module_name=module_name
-            )
-
-    return out
-
-
 def import_default_jobs() -> Set[RegisteredJob]:
     """Get all the registered jobs from all Django installed apps"""
 

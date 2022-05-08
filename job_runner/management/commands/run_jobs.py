@@ -16,7 +16,7 @@ from job_runner.runner import JobThread
 from job_runner.registration import (
     RegisteredJob,
     import_default_jobs,
-    import_jobs_from_modules,
+    import_jobs_from_module,
 )
 
 logger = get_logger(__name__)
@@ -256,7 +256,15 @@ def get_module_names_for_included_jobs(names: Set[str]) -> Set[str]:
 
 def get_jobs_for_included_names(names: Set[str]) -> Set[RegisteredJob]:
     module_names = get_module_names_for_included_jobs(names)
-    jobs = import_jobs_from_modules(module_names)
+
+    jobs: Set[RegisteredJob] = set()
+
+    for module_name in module_names:
+        try:
+            for job in import_jobs_from_module(module_name):
+                jobs.add(job)
+        except ModuleNotFoundError:
+            logger.warning("Module not found during import", module_name=module_name)
 
     return {job for job in jobs if job.name in names}
 
