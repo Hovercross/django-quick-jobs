@@ -77,7 +77,7 @@ class TimeoutTracker(Thread):
 
         got_timeout = False
 
-        for timeout in self._running.items():
+        for timeout in self._running.values():
             if timeout.timeout < time.monotonic():
                 self._log.warn("Timeout reached", name=timeout.name)
                 got_timeout = True
