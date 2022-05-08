@@ -31,10 +31,10 @@ class Command(BaseCommand):
 
         group.add_argument(
             "--include-job",
-            nargs="+",
             dest="include_jobs",
             metavar="JOB_NAME",
             default=[],
+            action="append",
             help=(
                 "A job name to include. If no jobs are included, "
                 "all jobs except those excluded will be included"
@@ -43,10 +43,10 @@ class Command(BaseCommand):
 
         group.add_argument(
             "--exclude-job",
-            nargs="+",
             dest="exclude_jobs",
             metavar="JOB_NAME",
             default=[],
+            action="append",
             help="A job name to exclude when all jobs are being included",
         )
 
@@ -110,6 +110,7 @@ class Command(BaseCommand):
         log = logger.bind()
 
         if include_jobs:
+            log.debug("Using job inclusion handler", include_jobs=include_jobs)
             try:
                 jobs = get_jobs_for_included_names(set(include_jobs))
             except InvalidJobName as exc:
