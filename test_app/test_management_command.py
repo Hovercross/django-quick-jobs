@@ -18,3 +18,8 @@ def test_no_jobs():
 
     with pytest.raises(SystemExit):
         call_command(*args)
+
+
+def test_default_jobs():
+    # Just make sure this runs
+    call_command("run_jobs", "--stop-after", "1")
