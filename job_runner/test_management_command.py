@@ -303,13 +303,24 @@ def test_missing_included_job():
         )
 
 
-    with pytest.raises(SystemExit):
-        call_command(
-            "run_jobs",
-            "--stop-after",
-            "1",
-            "--include-job",
-            "pie.jobs.asdf",
-            "--include-job",
-            "job_runner.test_management_command.sleep_job",
-        )
+def test_multiple_included_jobs():
+    """Make sure a properly formatted but missing included job throws an error"""
+
+    global fast_job_count
+    global slow_job_count
+
+    fast_job_count = 0
+    slow_job_count = 0
+
+    call_command(
+        "run_jobs",
+        "--stop-after",
+        "1",
+        "--include-job",
+        "job_runner.test_management_command.slow_job",
+        "--include-job",
+        "job_runner.test_management_command.fast_job",
+    )
+
+    assert fast_job_count > 0
+    assert slow_job_count > 0
