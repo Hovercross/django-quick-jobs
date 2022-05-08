@@ -1,6 +1,5 @@
 """Tracking utils for job runner"""
 
-from enum import auto
 import importlib
 import inspect
 from threading import Event
