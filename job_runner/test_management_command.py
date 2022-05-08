@@ -288,3 +288,18 @@ def test_bad_module_name():
             "--include-job",
             "pie",
         )
+
+
+def test_missing_included_job():
+    """Make sure a properly formatted but missing included job throws an error"""
+
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--stop-after",
+            "1",
+            "--include-job",
+            "pie.jobs.asdf",
+            "--include-job",
+            "job_runner.test_management_command.sleep_job",
+        )
