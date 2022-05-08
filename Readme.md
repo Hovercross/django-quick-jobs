@@ -1,8 +1,25 @@
 # Django Quick Jobs
 
-I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners, and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s), and then decorating each job with `@job_runner.register_job(interval, variance)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every interval with an additional random delay between 0 and the variance. The variance option is to reduce the impact of any thundering herds when you have multiple jobs at the same interval or multiple job runners that might all start at once.
+A way of running simple periodic tasks without the use of Cron, Celery, RabbitMQ, Redis, or any external services.
 
-Jobs are not coordinated across multiple instances of run_jobs. The individual jobs need to be designed to handle concurrency, for instance by locking using `select_for_update=True` in a queryset.
+## Why was this created
+
+I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s) and then decorating each job with `@job_runner.register_job(interval, variance)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every `interval` with an additional random delay between 0 and `variance`. The variance option is to reduce the impact of any "thundering herds"
+
+Jobs are not coordinated across multiple instances of run_jobs - the individual jobs need to be designed to handle concurrency on their own. Strategies for this would be to use `select_for_update`, a serializable isolation level, or some external locking mechanics.
+
+This library is best used for smaller-scale sites where Celery and the like is overkill. Once you are worrying about large numbers of jobs or the performance of querying the database for any ready work, it is probably time to move to a more robust tool.
+
+## Sample use cases
+
+### Recalculating data
+
+We might have some model that sets a `needs_recalculation` field. We could have a periodic job that queries everything that has `needs_recalculation` set to true and perform some calculation that takes a long time - such as updating other related data models. The models we are updating should use `select_for_update` so that multiple instances of the job runner don't try to recalculate the same objects at the same time
+
+### Sending emails
+
+We might have a process that inserts outgoing email records into a database table. We could have a job that queries for all unsent email (again with `select_for_update`) and sends them, then marking them as sent in the database.
+
 
 ## Example usage
 
