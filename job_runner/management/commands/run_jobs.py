@@ -3,10 +3,9 @@
 from datetime import timedelta
 import time
 import sys
-from threading import Event
+from threading import Event, Thread
 from random import random
 import signal
-from threading import Thread
 from typing import Iterable, List, Set
 
 from django.core.management.base import BaseCommand, CommandParser
@@ -17,7 +16,7 @@ from job_runner.runner import JobThread
 from job_runner.registration import (
     RegisteredJob,
     import_default_jobs,
-    import_jobs_from_modules,
+    import_jobs_from_module,
 )
 
 logger = get_logger(__name__)
@@ -31,10 +30,10 @@ class Command(BaseCommand):
 
         group.add_argument(
             "--include-job",
-            nargs="+",
             dest="include_jobs",
             metavar="JOB_NAME",
             default=[],
+            action="append",
             help=(
                 "A job name to include. If no jobs are included, "
                 "all jobs except those excluded will be included"
@@ -43,10 +42,10 @@ class Command(BaseCommand):
 
         group.add_argument(
             "--exclude-job",
-            nargs="+",
             dest="exclude_jobs",
             metavar="JOB_NAME",
             default=[],
+            action="append",
             help="A job name to exclude when all jobs are being included",
         )
 
@@ -110,6 +109,7 @@ class Command(BaseCommand):
         log = logger.bind()
 
         if include_jobs:
+            log.debug("Using job inclusion handler", include_jobs=include_jobs)
             try:
                 jobs = get_jobs_for_included_names(set(include_jobs))
             except InvalidJobName as exc:
@@ -256,7 +256,15 @@ def get_module_names_for_included_jobs(names: Set[str]) -> Set[str]:
 
 def get_jobs_for_included_names(names: Set[str]) -> Set[RegisteredJob]:
     module_names = get_module_names_for_included_jobs(names)
-    jobs = import_jobs_from_modules(module_names)
+
+    jobs: Set[RegisteredJob] = set()
+
+    for module_name in module_names:
+        try:
+            for job in import_jobs_from_module(module_name):
+                jobs.add(job)
+        except ModuleNotFoundError:
+            logger.warning("Module not found during import", module_name=module_name)
 
     return {job for job in jobs if job.name in names}
 

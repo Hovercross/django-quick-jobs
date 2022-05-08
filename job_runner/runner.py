@@ -90,8 +90,6 @@ class JobThread(Thread):
         if not delays:
             return
 
-        # Add a little pad to account for clock weirdness, since Django uses time.monotonic to
-        # track when it needs to clean up
         delay = min(delays)
         self._next_database_cleanup = time.monotonic() + delay
         self.log.debug(

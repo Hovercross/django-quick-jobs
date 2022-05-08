@@ -1,6 +1,5 @@
 """Tracking utils for job runner"""
 
-from enum import auto
 import importlib
 import inspect
 from threading import Event
@@ -82,18 +81,6 @@ def import_jobs_from_module(module_name: str) -> Iterable[RegisteredJob]:
     for item in module.__dict__.values():
         if isinstance(item, RegisteredJob):
             yield item
-
-
-def import_jobs_from_modules(module_names: Iterable[str]) -> Set[RegisteredJob]:
-    """Import jobs from a list of modules"""
-
-    out: Set[RegisteredJob] = set()
-
-    for module_name in module_names:
-        for job in import_jobs_from_module(module_name):
-            out.add(job)
-
-    return out
 
 
 def import_default_jobs() -> Set[RegisteredJob]:
