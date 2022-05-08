@@ -12,7 +12,7 @@ DEBUG = False
 ALLOWED_HOSTS: List[str] = []
 
 
-INSTALLED_APPS = ["job_runner", "test_app"]
+INSTALLED_APPS = ["django.contrib.staticfiles", "job_runner", "test_app"]
 MIDDLEWARE: List[str] = []
 
 ROOT_URLCONF = "test_project.urls"
