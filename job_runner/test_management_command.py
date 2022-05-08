@@ -1,6 +1,9 @@
 """Tests for management command"""
 
 from threading import Event
+import signal
+import threading
+import time
 
 import pytest
 
@@ -316,6 +319,60 @@ def test_multiple_included_jobs():
         "run_jobs",
         "--stop-after",
         "1",
+        "--include-job",
+        "job_runner.test_management_command.slow_job",
+        "--include-job",
+        "job_runner.test_management_command.fast_job",
+    )
+
+    assert fast_job_count > 0
+    assert slow_job_count > 0
+
+
+@pytest.mark.timeout(5)
+def test_trial_run():
+    """Make sure the included jobs don't get executed and we exit almost immediately"""
+
+    global fast_job_count
+    global slow_job_count
+
+    fast_job_count = 0
+    slow_job_count = 0
+
+    call_command(
+        "run_jobs",
+        "--trial-run",
+        "--include-job",
+        "job_runner.test_management_command.slow_job",
+        "--include-job",
+        "job_runner.test_management_command.fast_job",
+    )
+
+    assert fast_job_count == 0
+    assert slow_job_count == 0
+
+
+@pytest.mark.timeout(5)
+def test_signal_exit():
+    """Make sure the included jobs don't get executed and we exit almost immediately"""
+
+    global fast_job_count
+    global slow_job_count
+
+    fast_job_count = 0
+    slow_job_count = 0
+
+    # After 1 second, send a termination signal.
+    # Since both of the jobs are well-behaved they should exit almost immediately
+    def send_term():
+        time.sleep(1)
+        main_thread = threading.main_thread().ident
+        signal.pthread_kill(main_thread, signal.SIGTERM)
+
+    threading.Thread(target=send_term).start()
+
+    call_command(
+        "run_jobs",
         "--include-job",
         "job_runner.test_management_command.slow_job",
         "--include-job",
