@@ -1,5 +1,7 @@
-from typing import Optional, Union
+from typing import TypeVar, Optional, Union
 from datetime import timedelta
+
+T = TypeVar("T")
 
 AutoTime = Union[timedelta, int, float]
 
@@ -11,10 +13,8 @@ def auto_time(val: AutoTime) -> timedelta:
     return timedelta(seconds=val)
 
 
-def auto_time_default(
-    val: Optional[AutoTime], default: timedelta = timedelta(0)
-) -> timedelta:
+def auto_time_default(val: Optional[AutoTime], default: T) -> Union[timedelta, T]:
     if val is None:
-        return timedelta(0)
+        return default
 
     return auto_time(val)
