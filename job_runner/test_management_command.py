@@ -300,6 +300,16 @@ def test_missing_included_job():
             "1",
             "--include-job",
             "pie.jobs.asdf",
+        )
+
+
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--stop-after",
+            "1",
+            "--include-job",
+            "pie.jobs.asdf",
             "--include-job",
             "job_runner.test_management_command.sleep_job",
         )
