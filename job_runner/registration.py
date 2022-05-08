@@ -26,6 +26,7 @@ class RegisteredJob:
         self,
         interval: timedelta,
         variance: timedelta,
+        timeout: Optional[timedelta],
         func: Job,
     ):
         self._interval = interval
@@ -56,14 +57,19 @@ class RegisteredJob:
         return self._func(env)
 
 
-def register_job(interval: AutoTime, variance: Optional[AutoTime] = None):
+def register_job(
+    interval: AutoTime,
+    variance: Optional[AutoTime] = None,
+    timeout: Optional[AutoTime] = None,
+):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
         return RegisteredJob(
             interval=auto_time(interval),
-            variance=auto_time_default(variance),
+            variance=auto_time_default(variance, timedelta(0)),
+            timeout=auto_time_default(timeout, None),
             func=func,
         )
 
