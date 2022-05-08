@@ -3,10 +3,9 @@
 from datetime import timedelta
 import time
 import sys
-from threading import Event
+from threading import Event, Thread
 from random import random
 import signal
-from threading import Thread
 from typing import Iterable, List, Set
 
 from django.core.management.base import BaseCommand, CommandParser
