@@ -32,11 +32,16 @@ class RegisteredJob:
         self._interval = interval
         self._variance = variance
         self._func = func
+        self._timeout = timeout
 
     @property
     def name(self):
         """The full name of the function to be called"""
         return f"{self._func.__module__}.{self._func.__name__}"
+
+    @property
+    def timeout(self) -> Optional[timedelta]:
+        return self._timeout
 
     @property
     def interval(self) -> timedelta:
