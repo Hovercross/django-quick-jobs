@@ -5,7 +5,7 @@ import time
 
 from structlog import get_logger, BoundLogger
 
-logger: BoundLogger = get_logger()
+logger = get_logger()
 
 Callback = Callable[[], None]
 
