@@ -19,6 +19,14 @@ fast_job_count = 0
 rerun_job_count = 0
 
 
+@register_job(0, timeout=1)
+def paused_job_timeout(env: RunEnv):
+    """A job that pauses forever"""
+
+    while True:
+        env.sleep(1)
+
+
 @register_job(0)
 def paused_job(env: RunEnv):
     """A job that pauses forever"""
@@ -381,6 +389,16 @@ def test_signal_exit():
 
     assert fast_job_count > 0
     assert slow_job_count > 0
+
+
+@pytest.mark.timeout(5)
+def test_timeout():
+    with pytest.raises(SystemExit):
+        call_command(
+            "run_jobs",
+            "--include-job",
+            "job_runner.test_management_command.paused_job_timeout",
+        )
 
 
 def test_invalid_job_for_coverage():
