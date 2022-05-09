@@ -111,7 +111,11 @@ class JobThread(Thread):
         timeout_fired = Event()
 
         def fire_timeout():
-            self.log.warning("Job timed out")
+            self.log.error(
+                "Job timed out",
+                start_time=started_at,
+                timeout=self.job.timeout.total_seconds(),
+            )
             timeout_fired.set()
             self.stopping.set()
 
