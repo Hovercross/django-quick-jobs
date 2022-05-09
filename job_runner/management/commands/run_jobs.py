@@ -19,6 +19,8 @@ from job_runner.registration import (
     import_jobs_from_module,
 )
 
+from job_runner.timeouts import TimeoutTracker
+
 logger = get_logger(__name__)
 
 
@@ -163,7 +165,9 @@ class Command(BaseCommand):
         def stop_signal_handler(*args, **kwargs):
             request_stop.set()
 
-        got_fatal = _Flag()
+        timeout_tracker = TimeoutTracker(request_stop)
+        timeout_tracker.start()
+        got_fatal = Event()
 
         def on_fatal():
             log.error("A job runner failed fatally")
@@ -172,11 +176,12 @@ class Command(BaseCommand):
 
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
+        signal.signal(signal.SIGQUIT, stop_signal_handler)
 
         threads: List[JobThread] = []
 
         for job in jobs:
-            runner = JobThread(job, request_stop, on_fatal)
+            runner = JobThread(job, request_stop, on_fatal, timeout_tracker)
             runner.daemon = True
             threads.append(runner)
             runner.start()
@@ -185,7 +190,11 @@ class Command(BaseCommand):
             final_delay = stop_after + stop_variance * random()
             log.info("Job runner stop registered", run_time=final_delay)
 
-            _EventSetter(timedelta(seconds=final_delay), request_stop).start()
+            def stop_callback():
+                log.info("Setting stop event due to stop timeout")
+                request_stop.set()
+
+            timeout_tracker.add_timeout(timedelta(seconds=final_delay), stop_callback)
 
         log.info("All jobs have been started")
         request_stop.wait()
@@ -203,34 +212,9 @@ class Command(BaseCommand):
 
         log.info("All jobs have stopped")
 
-        if got_fatal.is_set:
+        if got_fatal.is_set():
             log.warning("A fatal error was thrown from a job, exiting with code 1")
             sys.exit(1)
-
-
-class _EventSetter(Thread):
-    """Set an event after some amount of time"""
-
-    def __init__(self, delay: timedelta, evt: Event):
-        self.delay = delay
-        self.evt = evt
-        super().__init__()
-
-    def run(self):
-        self.evt.wait(self.delay.total_seconds())
-        self.evt.set()
-
-
-class _Flag:
-    def __init__(self):
-        self._set = False
-
-    def set(self):
-        self._set = True
-
-    @property
-    def is_set(self):
-        return self._set
 
 
 class InvalidJobName(ValueError):

@@ -3,7 +3,7 @@
 from threading import Event
 from typing import Tuple
 
-from job_runner.time import AutoTime, auto_time_default
+from job_runner.time import AutoTime, auto_time
 
 
 class SleepInterrupted(Exception):
@@ -47,7 +47,7 @@ class RunEnv:
     def sleep(self, timeout: AutoTime):
         """Wait for stop should be used instead of any sleeps"""
 
-        wait_time = auto_time_default(timeout)
+        wait_time = auto_time(timeout)
 
         self._env.stop_event.wait(wait_time.total_seconds())
 

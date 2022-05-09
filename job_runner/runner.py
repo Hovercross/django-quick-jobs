@@ -9,6 +9,7 @@ import django.db
 
 from job_runner.environment import get_environments, SleepInterrupted
 from job_runner.registration import RegisteredJob
+from job_runner.timeouts import TimeoutTracker
 
 from structlog import get_logger
 
@@ -23,6 +24,7 @@ class JobThread(Thread):
         job: RegisteredJob,
         stop: Event,
         throw_error: Callable[[], None],
+        timeout_tracker: TimeoutTracker,
     ):
         self.job = job
         self.stopping = stop
@@ -31,8 +33,11 @@ class JobThread(Thread):
 
         self._next_run = job.variance.total_seconds() * random()
         self._next_database_cleanup: Optional[float] = None
+        self._timeout_tracker = timeout_tracker
 
         super().__init__()
+
+        self.name = f"Runner: {self.job.name}"
 
     @property
     def _next_event(self) -> float:
@@ -103,6 +108,23 @@ class JobThread(Thread):
 
         run_env, tracker_env = get_environments(self.stopping)
         started_at = time.monotonic()
+        timeout_fired = Event()
+
+        def fire_timeout():
+            self.log.error(
+                "Job timed out",
+                start_time=started_at,
+                timeout=self.job.timeout.total_seconds(),
+            )
+            timeout_fired.set()
+            self.stopping.set()
+
+        cancel_func: Optional[Callable[[], None]] = None
+
+        if self.job.timeout:
+            cancel_func = self._timeout_tracker.add_timeout(
+                self.job.timeout, fire_timeout
+            )
 
         try:
             django.db.reset_queries()  # This is normally run before each request
@@ -114,8 +136,20 @@ class JobThread(Thread):
             if tracker_env.requested_fatal_errors:
                 self.log.warning("Job requested fatal errors, propagating error")
                 raise exc
-
             self.log.exception("Finished job with exception", error=str(exc))
+        finally:
+            if cancel_func:
+                cancel_func()
+
+        if timeout_fired.is_set():
+            self.log.debug(
+                "Edge case race condition detected: "
+                "job timeout fired out and also finished"
+            )
+
+            # Set on fatal because this is ultimately a bad thing and
+            # we don't want a clean exit if we are exiting due to timeout
+            self._on_fatal()
 
         now = time.monotonic()
         execution_time = now - started_at

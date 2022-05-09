@@ -26,16 +26,22 @@ class RegisteredJob:
         self,
         interval: timedelta,
         variance: timedelta,
+        timeout: Optional[timedelta],
         func: Job,
     ):
         self._interval = interval
         self._variance = variance
         self._func = func
+        self._timeout = timeout
 
     @property
     def name(self):
         """The full name of the function to be called"""
         return f"{self._func.__module__}.{self._func.__name__}"
+
+    @property
+    def timeout(self) -> Optional[timedelta]:
+        return self._timeout
 
     @property
     def interval(self) -> timedelta:
@@ -56,14 +62,19 @@ class RegisteredJob:
         return self._func(env)
 
 
-def register_job(interval: AutoTime, variance: Optional[AutoTime] = None):
+def register_job(
+    interval: AutoTime,
+    variance: Optional[AutoTime] = None,
+    timeout: Optional[AutoTime] = None,
+):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
         return RegisteredJob(
             interval=auto_time(interval),
-            variance=auto_time_default(variance),
+            variance=auto_time_default(variance, timedelta(0)),
+            timeout=auto_time_default(timeout, None),
             func=func,
         )
 
