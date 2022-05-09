@@ -403,6 +403,40 @@ def test_timeout():
         )
 
 
+@register_job(0, timeout=1)
+def run_forever_timeout(env: RunEnv):
+    run_forever_event.wait()
+
+
+@pytest.mark.timeout(15)
+def test_run_forever_timeout_race():
+    """Test that when we have a timed out job that ends up exiting,
+    we still get an error"""
+
+    run_forever_event.clear()
+
+    # After 2 seconds, clear the event. This will let the job runner
+    # thread finish, call the race condition timeout cancelation,
+    # and let the job thread exit cleanly - but we should still get an error
+
+    def delay():
+        time.sleep(2)
+        run_forever_event.set()
+
+    threading.Thread(target=delay).start()
+
+    with pytest.raises(SystemExit):
+        # Call with an explicit stop timeout. This ensures our delay event fires to release
+        # the stopped job before the master timeout kills the entire runner
+        call_command(
+            "run_jobs",
+            "--stop-timeout",
+            "10",
+            "--include-job",
+            "job_runner.test_management_command.run_forever_timeout",
+        )
+
+
 def test_invalid_job_for_coverage():
     """Just call the invalid job to make my coverage higher"""
 
