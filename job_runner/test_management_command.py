@@ -118,13 +118,13 @@ def test_fast_job():
     call_command(
         "run_jobs",
         "--stop-after",
-        "1",
+        "5",
         "--include-job",
         "job_runner.test_management_command.fast_job",
     )
 
     # We allow a range since timing isn't perfect
-    assert 8 < fast_job_count < 12
+    assert 5 < fast_job_count < 100
 
 
 @register_job(30)
