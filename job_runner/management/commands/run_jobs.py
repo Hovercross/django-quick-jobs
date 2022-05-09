@@ -19,6 +19,8 @@ from job_runner.registration import (
     import_jobs_from_module,
 )
 
+from job_runner.timeouts import TimeoutTracker
+
 logger = get_logger(__name__)
 
 
@@ -163,6 +165,8 @@ class Command(BaseCommand):
         def stop_signal_handler(*args, **kwargs):
             request_stop.set()
 
+        timeout_tracker = TimeoutTracker(request_stop)
+        timeout_tracker.start()
         got_fatal = Event()
 
         def on_fatal():
@@ -177,7 +181,7 @@ class Command(BaseCommand):
         threads: List[JobThread] = []
 
         for job in jobs:
-            runner = JobThread(job, request_stop, on_fatal)
+            runner = JobThread(job, request_stop, on_fatal, timeout_tracker)
             runner.daemon = True
             threads.append(runner)
             runner.start()

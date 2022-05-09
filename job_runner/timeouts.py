@@ -32,6 +32,10 @@ class TimeoutTracker(Thread):
 
         def cancel():
             with self._lock:
+                if not key in self._running:
+                    self._log.warning("Got timeout cancelation after timeout fired")
+                    return
+
                 del self._running[key]
 
         timeout_time = time.monotonic() + duration.total_seconds()

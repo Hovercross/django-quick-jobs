@@ -23,8 +23,10 @@ rerun_job_count = 0
 def paused_job_timeout(env: RunEnv):
     """A job that pauses forever"""
 
+    print("Starting paused job with timeout")
+
     while True:
-        env.sleep(1)
+        time.sleep(1)
 
 
 @register_job(0)
@@ -391,7 +393,7 @@ def test_signal_exit():
     assert slow_job_count > 0
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(20)
 def test_timeout():
     with pytest.raises(SystemExit):
         call_command(
