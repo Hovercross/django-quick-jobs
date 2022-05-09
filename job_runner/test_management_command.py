@@ -157,6 +157,7 @@ def rerun_job(env: RunEnv):
     env.request_rerun()
 
 
+@pytest.mark.timeout(15)
 def test_rerun_job():
     global rerun_job_count
     rerun_job_count = 0
@@ -169,9 +170,7 @@ def test_rerun_job():
         "job_runner.test_management_command.rerun_job",
     )
 
-    # This is a very inexact measurement, but 10 is an extremely low bound.
-    # On my M1 Mac I got 1154 in one second.
-    assert rerun_job_count > 10
+    assert rerun_job_count > 2
 
 
 @register_job(0)
