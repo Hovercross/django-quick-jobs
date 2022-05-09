@@ -163,7 +163,7 @@ class Command(BaseCommand):
         def stop_signal_handler(*args, **kwargs):
             request_stop.set()
 
-        got_fatal = _Flag()
+        got_fatal = Event()
 
         def on_fatal():
             log.error("A job runner failed fatally")
@@ -203,7 +203,7 @@ class Command(BaseCommand):
 
         log.info("All jobs have stopped")
 
-        if got_fatal.is_set:
+        if got_fatal.is_set():
             log.warning("A fatal error was thrown from a job, exiting with code 1")
             sys.exit(1)
 
@@ -219,18 +219,6 @@ class _EventSetter(Thread):
     def run(self):
         self.evt.wait(self.delay.total_seconds())
         self.evt.set()
-
-
-class _Flag:
-    def __init__(self):
-        self._set = False
-
-    def set(self):
-        self._set = True
-
-    @property
-    def is_set(self):
-        return self._set
 
 
 class InvalidJobName(ValueError):
