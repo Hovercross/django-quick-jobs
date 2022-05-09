@@ -18,7 +18,7 @@ class TimeoutTracker(Thread):
         self._running: Dict[object, Tuple[float, Callback]] = {}
         self._log = logger.bind(process="timeout tracker")
 
-        super().__init__(name="timeout watcher")
+        super().__init__(name="Timeout tracker")
 
     def _watch_for_stop(self):
         self._stop_evt.wait()
@@ -53,7 +53,7 @@ class TimeoutTracker(Thread):
         """Loop through until a timeout is reached"""
 
         # Start up a background thread that watches for a stop event
-        Thread(name="timeout stop watcher", target=self._watch_for_stop).start()
+        Thread(name="Timeout tracker stop watcher", target=self._watch_for_stop).start()
 
         while not self._stop_evt.is_set():
             delay = self._run_once()

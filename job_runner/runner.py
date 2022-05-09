@@ -37,6 +37,8 @@ class JobThread(Thread):
 
         super().__init__()
 
+        self.name = f"{self.job.name} runner"
+
     @property
     def _next_event(self) -> float:
         """Figure out the next time anything happens"""
