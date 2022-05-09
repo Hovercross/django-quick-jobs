@@ -3,7 +3,7 @@ from threading import Thread, Event, Lock
 from typing import Callable, Dict, Optional, Set, Tuple
 import time
 
-from structlog import get_logger, BoundLogger
+from structlog import get_logger
 
 logger = get_logger()
 
