@@ -172,6 +172,7 @@ class Command(BaseCommand):
 
         signal.signal(signal.SIGINT, stop_signal_handler)
         signal.signal(signal.SIGTERM, stop_signal_handler)
+        signal.signal(signal.SIGQUIT, stop_signal_handler)
 
         threads: List[JobThread] = []
 
