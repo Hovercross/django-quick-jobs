@@ -190,7 +190,11 @@ class Command(BaseCommand):
             final_delay = stop_after + stop_variance * random()
             log.info("Job runner stop registered", run_time=final_delay)
 
-            _EventSetter(timedelta(seconds=final_delay), request_stop).start()
+            def stop_callback():
+                log.info("Setting stop event due to stop timeout")
+                request_stop.set()
+
+            timeout_tracker.add_timeout(timedelta(seconds=final_delay), stop_callback)
 
         log.info("All jobs have been started")
         request_stop.wait()
@@ -211,19 +215,6 @@ class Command(BaseCommand):
         if got_fatal.is_set():
             log.warning("A fatal error was thrown from a job, exiting with code 1")
             sys.exit(1)
-
-
-class _EventSetter(Thread):
-    """Set an event after some amount of time"""
-
-    def __init__(self, delay: timedelta, evt: Event):
-        self.delay = delay
-        self.evt = evt
-        super().__init__()
-
-    def run(self):
-        self.evt.wait(self.delay.total_seconds())
-        self.evt.set()
 
 
 class InvalidJobName(ValueError):
