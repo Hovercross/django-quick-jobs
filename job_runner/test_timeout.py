@@ -26,12 +26,15 @@ def test_basic_cancel():
     tracker = TimeoutTracker(stop_event)
     tracker.start()
 
-    cancel = tracker.add_timeout("test", timedelta(seconds=1))
+    got_cancel = Event()
+
+    cancel = tracker.add_timeout(timedelta(seconds=1), got_cancel.set)
     cancel()
 
     time.sleep(2)
-    assert not stop_event.is_set()
+    assert not got_cancel.is_set()
     stop_event.set()
+    tracker.join()
 
 
 @pytest.mark.timeout(30)
@@ -40,7 +43,10 @@ def test_basic_timeout():
     tracker = TimeoutTracker(stop_event)
     tracker.start()
 
-    cancel = tracker.add_timeout("test", timedelta(seconds=1))
+    got_cancel = Event()
+    tracker.add_timeout(timedelta(seconds=1), got_cancel.set)
+
     time.sleep(2)
-    assert stop_event.is_set()
-    stop_event.set()  # Backup in case the tracker didn't fire it itself
+    assert got_cancel.is_set()
+    stop_event.set()  # Don't leave the thread hanging
+    tracker.join()  # Make sure it exited

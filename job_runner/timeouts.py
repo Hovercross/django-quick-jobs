@@ -1,13 +1,13 @@
 from datetime import timedelta
 from threading import Thread, Event, Lock
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Set, Tuple
 import time
 
 from structlog import get_logger, BoundLogger
 
 logger: BoundLogger = get_logger()
 
-Cancel = Callable[[], None]
+Callback = Callable[[], None]
 
 
 class TimeoutTracker(Thread):
@@ -15,7 +15,7 @@ class TimeoutTracker(Thread):
         self._check_timeout_evt = Event()
         self._stop_evt = stop
         self._lock = Lock()
-        self._running: Dict[object, Tuple[str, float]] = {}
+        self._running: Dict[object, Tuple[float, Callback]] = {}
         self._log = logger.bind(process="timeout tracker")
 
         super().__init__(name="timeout watcher")
@@ -25,7 +25,7 @@ class TimeoutTracker(Thread):
 
         self._check_timeout_evt.set()
 
-    def add_timeout(self, name: str, duration: timedelta) -> Cancel:
+    def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
 
         key = object()
@@ -41,7 +41,7 @@ class TimeoutTracker(Thread):
 
             # Set the event so the loop fires,
             # which will update the sleep time in case this is to be the next firing event
-            self._running[key] = (name, timeout_time)
+            self._running[key] = (timeout_time, callback)
 
         return cancel
 
@@ -66,16 +66,22 @@ class TimeoutTracker(Thread):
     def _fire_timeouts(self):
         """Loop through all the running timeouts and fire appropriate ones"""
 
-        for name, timeout in self._running.values():
+        to_remove: Set[object] = set()
+
+        for key, (timeout, callback) in self._running.items():
             if timeout < time.monotonic():
-                self._log.warn("Timeout reached", name=name)
-                self._stop_evt.set()
+                self._log.debug("Timeout reached")
+                to_remove.add(key)
+                callback()
+
+        for key in to_remove:
+            del self._running[key]
 
     @property
     def _next_timeout(self) -> Optional[float]:
         """The monotonic timeout of the nearest timeout object"""
 
-        timeouts = [timeout for _, timeout in self._running.values()]
+        timeouts = [timeout for timeout, _ in self._running.values()]
 
         if not timeouts:
             return None
