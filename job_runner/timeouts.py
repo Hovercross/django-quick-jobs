@@ -57,6 +57,7 @@ class TimeoutTracker(Thread):
 
         while not self._stop_evt.is_set():
             delay = self._run_once()
+            self._log.debug("Timeout tracker delaying", delay=delay)
             self._check_timeout_evt.wait(delay)
 
     def _run_once(self) -> Optional[float]:
