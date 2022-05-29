@@ -56,8 +56,9 @@ class TimeoutTracker(Thread):
         Thread(name="Timeout tracker stop watcher", target=self._watch_for_stop).start()
 
         while not self._stop_evt.is_set():
+            self._log.debug("Running timeout tracker checks")
             delay = self._run_once()
-            self._log.debug("Timeout tracker delaying", delay=delay)
+            self._log.debug("Timeout tracker checks finished", next_run_delay=delay)
             self._check_timeout_evt.wait(delay)
 
     def _run_once(self) -> Optional[float]:
@@ -98,4 +99,4 @@ class TimeoutTracker(Thread):
         if not self._next_timeout:
             return None
 
-        return time.monotonic() - self._next_timeout
+        return self._next_timeout - time.monotonic()
