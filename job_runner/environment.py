@@ -49,9 +49,7 @@ class RunEnv:
 
         wait_time = auto_time(timeout)
 
-        self._env.stop_event.wait(wait_time.total_seconds())
-
-        if self._env.stop_event.is_set():
+        if self._env.stop_event.wait(wait_time.total_seconds()):
             raise SleepInterrupted()
 
     def request_rerun(self):

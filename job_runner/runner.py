@@ -187,9 +187,7 @@ class JobThread(Thread):
         while not self.stopping.is_set():
             delay = self._next_event_delay
             self.log.debug("Delaying thread loop", delay=delay)
-            self.stopping.wait(delay)
-
-            if self.stopping.is_set():
+            if self.stopping.wait(delay):
                 return
 
             self._conditional_run()
