@@ -23,7 +23,8 @@ class TimeoutTracker(Thread):
     def _watch_for_stop(self):
         self._stop_evt.wait()
 
-        self._check_timeout_evt.set()
+        with self._lock:
+            self._check_timeout_evt.set()
 
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
@@ -59,7 +60,8 @@ class TimeoutTracker(Thread):
             self._log.debug("Running timeout tracker checks")
             delay = self._run_once()
             self._log.debug("Timeout tracker checks finished", next_run_delay=delay)
-            self._check_timeout_evt.wait(delay)
+            if delay:
+                self._check_timeout_evt.wait(delay)
 
     def _run_once(self) -> Optional[float]:
         """Fire all timeouts and return the delay for the next execution"""
