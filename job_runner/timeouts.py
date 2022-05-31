@@ -21,10 +21,14 @@ class TimeoutTracker(Thread):
         super().__init__(name="Timeout tracker")
 
     def _watch_for_stop(self):
+        self._log.debug("Beginning stop watcher")
         self._stop_evt.wait()
+        self._log.debug("Stop event fired, setting check timeout event")
 
         with self._lock:
             self._check_timeout_evt.set()
+
+        self._log.debug("Stop watcher finished")
 
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
