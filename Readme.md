@@ -4,11 +4,17 @@ A way of running simple periodic tasks without the use of Cron, Celery, RabbitMQ
 
 ## Why was this created
 
-I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s) and then decorating each job with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated *interval* with an additional random delay between 0 and *variance*. The variance option is to reduce the impact of any "thundering herds". If timeout is specified then the job runner will be stopped if the job takes longer than the timeout to finish. The only required parameter to `register_job` is the `interval`. All times (interval, variance, and timeout) can be integers, floats, or timedeltas.
+I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a *jobs.py* file in your Django app(s) with functions that should be run periodically.
+
+This library is best used for smaller-scale sites where Celery and the like is overkill. Once you are worrying about large numbers of jobs or the performance of querying the database for any ready work, it is probably time to move to a more robust tool.
+
+## Basic usage
+
+In each of your Django app(s) that need to have jobs, create a *jobs.py* file. Inside of *jobs.py*, create a function and decorate it with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every `interval` with an additional random delay between 0 and `variance`. The variance option is to reduce the impact of any "thundering herds". If `timeout` is specified then the job runner will be stopped if the job runs for longer than `timeout`. The only required parameter to `register_job` is `interval`. All times (`interval`, `variance`, and `timeout`) can be integers, floats, or timedelta objects. Integer and float parameters are interpreted as seconds.
 
 Jobs are not coordinated across multiple instances of run_jobs - the individual jobs need to be designed to handle concurrency on their own. Strategies for this would be to use `select_for_update`, a serializable isolation level, or some external locking mechanics.
 
-This library is best used for smaller-scale sites where Celery and the like is overkill. Once you are worrying about large numbers of jobs or the performance of querying the database for any ready work, it is probably time to move to a more robust tool.
+Individual runners will not start new executions of a job if the previous job is still running. If you only have one instance of `python manage.py run_jobs` at a time you can be reasonably certain that each of your jobs will only have one execution running at a time.
 
 ## Sample use cases
 
@@ -21,21 +27,21 @@ We might have some model that sets a `needs_recalculation` field. We could have 
 We might have a process that inserts outgoing email records into a database table. We could have a job that queries for all unsent email (again with `select_for_update`) and sends them, then marking them as sent in the database.
 
 
-## Example usage
 
-### Installation
+## Installation
 
 Install the package: `pip install django-quick-jobs`
 
-Add *job_runner* to *INSTALLED_APPS* in *settings.py*:
+Add `job_runner` to `INSTALLED_APPS` in *settings.py*:
 
 ```python
 INSTALLED_APPS = [
     ...
-    'your_great_app',
     'job_runner',
 ]
 ```
+
+## Example usage
 
 ### Create a job
 
@@ -52,6 +58,8 @@ from job_runner.environment import RunEnv
 def my_great_job(env: RunEnv):
     print(f"My great job is getting called at {datetime.now()}")
 ```
+
+Note that `your_great_app` must be in `INSTALLED_APPS` for the job runner to automatically detect it.
 
 ### Start the job runner
 
