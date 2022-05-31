@@ -62,6 +62,8 @@ class TimeoutTracker(Thread):
             self._log.debug("Timeout tracker checks finished", next_run_delay=delay)
             self._check_timeout_evt.wait(delay)
 
+        self._log.info("Timeout watcher exiting")
+
     def _run_once(self) -> Optional[float]:
         """Fire all timeouts and return the delay for the next execution"""
 
