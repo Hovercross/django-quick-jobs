@@ -25,9 +25,10 @@ We might have a process that inserts outgoing email records into a database tabl
 
 ### Installation
 
-`pip install django-quick-jobs`
+Install the package: `pip install django-quick-jobs`
 
-### settings.py:
+Add *job_runner* to *INSTALLED_APPS* in *settings.py*:
+
 ```python
 INSTALLED_APPS = [
     ...
@@ -36,7 +37,9 @@ INSTALLED_APPS = [
 ]
 ```
 
-### your_great_app/jobs.py:
+### Create a job
+
+In *your_great_app/jobs.py*:
 
 ```python
 from datetime import datetime
@@ -50,8 +53,11 @@ def my_great_job(env: RunEnv):
     print(f"My great job is getting called at {datetime.now()}")
 ```
 
-Start the job runner: `python manage.py run_jobs`
+### Start the job runner
 
+Run `python manage.py run_jobs` from your terminal
+
+Resulting output:
 ```text
 > python manage.py run_jobs
 
@@ -64,7 +70,7 @@ My great job is getting called at 2021-12-02 19:25:21.121113
 
 For most use cases no additional command line flags need to be set.
 
-- `--include-job`: The full path to a registered job that should be run in this instance of the job runner. This flag can be repeated to run multiple jobs, and if it is included no jobs excepted the listed jobs will be executed. Included jobs do not have to be in a `jobs.py` file and can be anywhere that can be imported from Python. Jobs must use the `@registered_job` decorator even if they are not in `jobs.py`
+- `--include-job`: The full path to a registered job that should be run in this instance of the job runner. This flag can be repeated to run multiple jobs and only the listed jobs will be executed. Included jobs do not have to be in a *jobs.py* file - they can be anywhere that can be imported from Python. Jobs must use the `@registered_job` decorator even if they are not in *jobs.py*.
 - `--exclude-job`: The full path of a registered job that should be excluded from being executed. All jobs not excluded will be run and this option is mutually exclusive with `--include-jobs`
 - `--stop-after`: Stop the job runner after some amount of time, listed in seconds. Useful to temporarily fix a resource leak by stopping the job runner periodically and then letting your execution environment start it again. By default the job runner does not shut itself down.
 - `--stop-variance`: A random delay to add to the `--stop-after` parameter in order to prevent thundering herds if you have multiple job runner instances.
