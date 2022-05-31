@@ -6,15 +6,15 @@ A way of running simple periodic tasks without the use of Cron, Celery, RabbitMQ
 
 I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a *jobs.py* file in your Django app(s) with functions that should be run periodically.
 
-This library is best used for smaller-scale sites where Celery and the like is overkill. Once you are worrying about large numbers of jobs or the performance of querying the database for any ready work, it is probably time to move to a more robust tool.
+This library is best used for smaller-scale sites where Celery and the like is overkill. Once you are worrying about large numbers of jobs or the performance of querying the database for any ready work it is probably time to move to a more robust tool.
 
 ## Basic usage
 
-In each of your Django app(s) that need to have jobs, create a *jobs.py* file. Inside of *jobs.py*, create a function and decorate it with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every `interval` with an additional random delay between 0 and `variance`. The variance option is to reduce the impact of any "thundering herds". If `timeout` is specified then the job runner will be stopped whenever the job runs for longer than `timeout`. The only required parameter to `register_job` is `interval`. All times (`interval`, `variance`, and `timeout`) can be integers, floats, or timedelta objects. Integer and float parameters are interpreted as seconds.
+In each of your Django app(s) that need to have jobs, create a *jobs.py* file. Inside of *jobs.py*, create a function that accepts a `job_runner.environment.RunEnv` parameter and decorate it with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every `interval` with an additional random delay between 0 and `variance`. The variance option is to reduce the impact of any "thundering herds". If `timeout` is specified then the job runner will be stopped whenever the job runs for longer than `timeout`. The only required parameter to `register_job` is `interval`. All times (`interval`, `variance`, and `timeout`) can be integers, floats, or timedelta objects. Integer and float parameters are interpreted as seconds.
 
 Jobs are not coordinated across multiple instances of run_jobs - the individual jobs need to be designed to handle concurrency on their own. Strategies for this would be to use `select_for_update`, a serializable isolation level, or some external locking mechanics.
 
-Individual runners will not start new executions of a job if the previous job is still running. If you only have one instance of `python manage.py run_jobs` at a time you can be reasonably certain that each of your individual jobs will only have one execution running at a time.
+Individual runners will not start new executions of a job if the previous job is still running. If you only have one instance of `python manage.py run_jobs` running you can be reasonably certain that each of your individual jobs will only have one execution of a given job at any given time.
 
 ## Sample use cases
 
@@ -94,7 +94,7 @@ For most use cases no additional command line flags need to be set.
 
 ## The job run environment
 
-Every job that is being run will be passed an instance of `job_runner.environments.RunEnv`. This environment gives the job instance the ability to interact with the job runner in limited ways.
+Every job that is being run will be passed an instance of `job_runner.environment.RunEnv`. This environment gives the job instance the ability to interact with the job runner in limited ways.
 
 The following functions and properties are exposed for use in the run environment:
 
