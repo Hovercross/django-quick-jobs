@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-quick-jobs"
-version = "0.1.0"
+version = "0.0.0"
 description = "A method of quickly and simply running background jobs in a Django project"
 authors = ["Adam Peacock <adam@thepeacock.net>"]
 license = "MIT"
