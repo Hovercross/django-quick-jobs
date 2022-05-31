@@ -82,4 +82,4 @@ jobs:
       - name: Re-install specific Django version
         run: pip install Django=="${{ matrix.django-version }}"
       - name: Run automated tests
-        run: pytest
+        run: pytest --timeout 600
