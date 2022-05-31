@@ -60,24 +60,19 @@ class TimeoutTracker(Thread):
         # Start up a background thread that watches for a stop event
         Thread(name="Timeout tracker stop watcher", target=self._watch_for_stop).start()
 
-        while not self._stop_evt.is_set():
+        while True:
             self._log.debug("Running timeout tracker checks")
-            delay = self._run_once()
-            self._log.debug("Timeout tracker checks finished", next_run_delay=delay)
+
+            with self._lock:
+                self._check_timeout_evt.clear()
+                self._fire_timeouts()
+                delay = self._next_timeout_delay
+                if self._stop_evt.is_set():
+                    break
+
             self._check_timeout_evt.wait(delay)
 
         self._log.info("Timeout watcher exiting")
-
-    def _run_once(self) -> Optional[float]:
-        """Fire all timeouts and return the delay for the next execution"""
-
-        self._log.debug("Running timeout tracker events once")
-
-        with self._lock:
-            self._check_timeout_evt.clear()
-            self._fire_timeouts()
-            self._log.debug("Timeout tracker run once finished")
-            return self._next_timeout_delay
 
     def _fire_timeouts(self):
         """Loop through all the running timeouts and fire appropriate ones"""
