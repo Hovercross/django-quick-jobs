@@ -9,7 +9,7 @@ import pytest
 
 from django.core.management import call_command
 
-from job_runner.environment import RunEnv, SleepInterrupted
+from job_runner.environment import RunEnv, RunInterrupted
 from job_runner.registration import register_job
 
 test_val = None
@@ -239,7 +239,7 @@ def test_stopping_loop():
 def paused_job_exception(env: RunEnv):
     """A job used to test if a paused job throws a sleep interrupted"""
 
-    with pytest.raises(SleepInterrupted):
+    with pytest.raises(RunInterrupted):
         while True:
             env.sleep(1)
 
@@ -251,6 +251,25 @@ def test_paused_job_exception():
         "1",
         "--include-job",
         "job_runner.test_management_command.paused_job_exception",
+    )
+
+
+@register_job(0)
+def check_for_interruption(env: RunEnv):
+    """A job that will continuously loop checking for an interrupt"""
+
+    with pytest.raises(RunInterrupted):
+        while True:
+            env.raise_if_stopping()
+
+
+def test_raise_if_stopping():
+    call_command(
+        "run_jobs",
+        "--stop-after",
+        "1",
+        "--include-job",
+        "job_runner.test_management_command.check_for_interruption",
     )
 
 

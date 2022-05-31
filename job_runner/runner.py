@@ -7,7 +7,7 @@ from typing import Callable, List, Optional
 
 import django.db
 
-from job_runner.environment import get_environments, SleepInterrupted
+from job_runner.environment import get_environments, RunInterrupted
 from job_runner.registration import RegisteredJob
 from job_runner.timeouts import TimeoutTracker
 
@@ -130,8 +130,8 @@ class JobThread(Thread):
             django.db.reset_queries()  # This is normally run before each request
             self.job(run_env)
             self.log.info("Job finished successfully")
-        except SleepInterrupted:
-            self.log.info("Job was interrupted during sleep")
+        except RunInterrupted:
+            self.log.info("Job was interrupted during run cycle")
         except Exception as exc:
             if tracker_env.requested_fatal_errors:
                 self.log.warning("Job requested fatal errors, propagating error")
