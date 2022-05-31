@@ -4,7 +4,7 @@ A way of running simple periodic tasks without the use of Cron, Celery, RabbitMQ
 
 ## Why was this created
 
-I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s) and then decorating each job with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated every `interval` with an additional random delay between 0 and `variance`. The variance option is to reduce the impact of any "thundering herds". If timeout is specified then the job runner will be stopped if the job takes longer than the timeout to finish. The only required parameter to `register_job` is the `interval`. All times (interval, variance, and timeout) can be integers, floats, or timedeltas.
+I have a need to run some periodic jobs on the DigitalOcean App Platform, which doesn't have any scheduled job runners and my use cases were too simple to bother with Celery and such. This package gives a simple way to have a `jobs.py` file in your Django app(s) and then decorating each job with `@job_runner.register_job(interval, variance, timeout)`. These jobs will then all be run via `python manage.py run_jobs`. Each job will be repeated *interval* with an additional random delay between 0 and *variance*. The variance option is to reduce the impact of any "thundering herds". If timeout is specified then the job runner will be stopped if the job takes longer than the timeout to finish. The only required parameter to `register_job` is the `interval`. All times (interval, variance, and timeout) can be integers, floats, or timedeltas.
 
 Jobs are not coordinated across multiple instances of run_jobs - the individual jobs need to be designed to handle concurrency on their own. Strategies for this would be to use `select_for_update`, a serializable isolation level, or some external locking mechanics.
 
@@ -14,7 +14,7 @@ This library is best used for smaller-scale sites where Celery and the like is o
 
 ### Recalculating data
 
-We might have some model that sets a `needs_recalculation` field. We could have a periodic job that queries everything that has `needs_recalculation` set to true and perform some calculation that takes a long time - such as updating other related data models. The models we are updating should use `select_for_update` so that multiple instances of the job runner don't try to recalculate the same objects at the same time
+We might have some model that sets a `needs_recalculation` field. We could have a periodic job that queries everything that has `needs_recalculation` set to true and perform some calculation that takes a long time - such as updating other related data models. The models we are updating should use `select_for_update` so that multiple instances of the job runner don't try to recalculate the same objects at the same time.
 
 ### Sending emails
 
@@ -23,7 +23,11 @@ We might have a process that inserts outgoing email records into a database tabl
 
 ## Example usage
 
-`settings.py`:
+### Installation
+
+`pip install django-quick-jobs`
+
+### settings.py:
 ```python
 INSTALLED_APPS = [
     ...
@@ -32,7 +36,8 @@ INSTALLED_APPS = [
 ]
 ```
 
-`your_great_app/jobs.py`:
+### your_great_app/jobs.py:
+
 ```python
 from datetime import datetime
 
