@@ -6,8 +6,8 @@ from typing import Tuple
 from job_runner.time import AutoTime, auto_time
 
 
-class SleepInterrupted(Exception):
-    """An exception indicating that a thread sleep was interrupted"""
+class RunInterrupted(Exception):
+    """An exception indicating that a job execution was interrupted"""
 
 
 class _Env:
@@ -50,7 +50,7 @@ class RunEnv:
         wait_time = auto_time(timeout)
 
         if self._env.stop_event.wait(wait_time.total_seconds()):
-            raise SleepInterrupted()
+            raise RunInterrupted()
 
     def request_rerun(self):
         self._env.request_immediate_rerun = True
@@ -65,6 +65,11 @@ class RunEnv:
     @property
     def is_stopping(self) -> bool:
         return self._env.stop_event.is_set()
+
+    def raise_if_stopping(self):
+        """Raise RunInterrupted if we are being asked to stop"""
+        if self.is_stopping:
+            raise RunInterrupted()
 
 
 def get_environments(stop_event: Event) -> Tuple[RunEnv, TrackerEnv]:

@@ -166,6 +166,7 @@ class Command(BaseCommand):
             request_stop.set()
 
         timeout_tracker = TimeoutTracker(request_stop)
+        timeout_tracker.daemon = True
         timeout_tracker.start()
         got_fatal = Event()
 

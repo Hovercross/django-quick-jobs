@@ -21,9 +21,14 @@ class TimeoutTracker(Thread):
         super().__init__(name="Timeout tracker")
 
     def _watch_for_stop(self):
+        self._log.debug("Beginning stop watcher")
         self._stop_evt.wait()
+        self._log.debug("Stop event fired, setting check timeout event")
 
-        self._check_timeout_evt.set()
+        with self._lock:
+            self._check_timeout_evt.set()
+
+        self._log.debug("Stop watcher finished")
 
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
@@ -33,7 +38,7 @@ class TimeoutTracker(Thread):
         def cancel():
             with self._lock:
                 if not key in self._running:
-                    self._log.warning("Got timeout cancelation after timeout fired")
+                    self._log.warning("Got timeout cancellation after timeout fired")
                     return
 
                 del self._running[key]
@@ -55,19 +60,19 @@ class TimeoutTracker(Thread):
         # Start up a background thread that watches for a stop event
         Thread(name="Timeout tracker stop watcher", target=self._watch_for_stop).start()
 
-        while not self._stop_evt.is_set():
+        while True:
             self._log.debug("Running timeout tracker checks")
-            delay = self._run_once()
-            self._log.debug("Timeout tracker checks finished", next_run_delay=delay)
+
+            with self._lock:
+                self._check_timeout_evt.clear()
+                self._fire_timeouts()
+                delay = self._next_timeout_delay
+                if self._stop_evt.is_set():
+                    break
+
             self._check_timeout_evt.wait(delay)
 
-    def _run_once(self) -> Optional[float]:
-        """Fire all timeouts and return the delay for the next execution"""
-
-        with self._lock:
-            self._check_timeout_evt.clear()
-            self._fire_timeouts()
-            return self._next_timeout_delay
+        self._log.info("Timeout watcher exiting")
 
     def _fire_timeouts(self):
         """Loop through all the running timeouts and fire appropriate ones"""
