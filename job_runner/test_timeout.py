@@ -9,10 +9,10 @@ import pytest
 from .timeouts import TimeoutTracker
 
 
-@pytest.mark.timeout(30)
 def test_exit():
     stop_event = Event()
     tracker = TimeoutTracker(stop_event)
+    tracker.daemon = True
     tracker.start()
 
     stop_event.set()
@@ -20,10 +20,10 @@ def test_exit():
     assert not tracker.is_alive()
 
 
-@pytest.mark.timeout(30)
 def test_basic_cancel():
     stop_event = Event()
     tracker = TimeoutTracker(stop_event)
+    tracker.daemon = True
     tracker.start()
 
     got_cancel = Event()
@@ -37,10 +37,10 @@ def test_basic_cancel():
     tracker.join()
 
 
-@pytest.mark.timeout(30)
 def test_basic_timeout():
     stop_event = Event()
     tracker = TimeoutTracker(stop_event)
+    tracker.daemon = True
     tracker.start()
 
     got_cancel = Event()
