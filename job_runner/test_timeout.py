@@ -15,7 +15,6 @@ def test_exit():
     tracker = TimeoutTracker(stop_event)
     tracker.start()
 
-    time.sleep(1)
     stop_event.set()
     tracker.join(1)
     assert not tracker.is_alive()
