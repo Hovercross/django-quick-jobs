@@ -15,8 +15,9 @@ class TimeoutTracker(Thread):
         self._check_timeout_evt = Event()
         self._stop_evt = stop
         self._lock = Lock()
-        self._running: Dict[object, Tuple[float, Callback]] = {}
+        self._running: Dict[int, Tuple[float, Callback]] = {}
         self._log = logger.bind(process="timeout tracker")
+        self._index = 0
 
         super().__init__(name="Timeout tracker")
 
@@ -33,7 +34,9 @@ class TimeoutTracker(Thread):
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
 
-        key = object()
+        with self._lock:
+            key = self._index
+            self._index += 1
 
         def cancel():
             with self._lock:
@@ -78,7 +81,7 @@ class TimeoutTracker(Thread):
     def _fire_timeouts(self):
         """Loop through all the running timeouts and fire appropriate ones"""
 
-        to_remove: Set[object] = set()
+        to_remove: Set[int] = set()
 
         for key, (timeout, callback) in self._running.items():
             if timeout < time.monotonic():
