@@ -17,7 +17,7 @@ class TimeoutTracker(Thread):
         self._lock = Lock()
         self._running: Dict[int, Tuple[float, Callback]] = {}
         self._log = logger.bind(process="timeout tracker")
-        self._index = 0
+        self._key_counter = Counter()
 
         super().__init__(name="Timeout tracker")
 
@@ -34,9 +34,7 @@ class TimeoutTracker(Thread):
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
 
-        with self._lock:
-            key = self._index
-            self._index += 1
+        key = self._key_counter.increment()
 
         def cancel():
             with self._lock:
@@ -109,3 +107,19 @@ class TimeoutTracker(Thread):
             return None
 
         return self._next_timeout - time.monotonic()
+
+
+class Counter:
+    """An atomic counter"""
+
+    def __init__(self):
+        self._value = 0
+        self._lock = Lock()
+
+    def increment(self) -> int:
+        """Increment the counter and return the previous value"""
+
+        with self._lock:
+            val = self._value
+            self._value += 1
+            return val
