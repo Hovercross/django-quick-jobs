@@ -64,6 +64,9 @@ def test_multiple_timeouts():
     tracker.add_timeout(timedelta(seconds=1), t_1.set)
     tracker.add_timeout(timedelta(seconds=10), t_2.set)
 
+    assert not t_1.is_set()
+    assert not t_2.is_set()
+
     time.sleep(2)
     assert t_1.is_set()
     assert not t_2.is_set()
