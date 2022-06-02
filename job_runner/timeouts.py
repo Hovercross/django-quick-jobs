@@ -64,6 +64,7 @@ class TimeoutTracker(Thread):
             self._log.debug("Running timeout tracker checks")
 
             with self._lock:
+                self._log.debug("Lock acquired for timeout tracker checks")
                 self._check_timeout_evt.clear()
                 self._fire_timeouts()
                 delay = self._next_timeout_delay
