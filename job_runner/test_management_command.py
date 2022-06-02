@@ -382,7 +382,7 @@ def test_signal_exit():
         main_thread = threading.main_thread().ident
         signal.pthread_kill(main_thread, signal.SIGTERM)
 
-    threading.Thread(target=send_term).start()
+    threading.Thread(target=send_term, name="Termination sender").start()
 
     call_command(
         "run_jobs",
@@ -436,7 +436,7 @@ def test_run_forever_timeout_race():
         time.sleep(2)
         run_forever_event.set()
 
-    threading.Thread(target=delay).start()
+    threading.Thread(target=delay, name="Event setter").start()
 
     with pytest.raises(SystemExit):
         # Call with an explicit stop timeout. This ensures our delay event fires to release
