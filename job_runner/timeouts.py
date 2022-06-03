@@ -17,7 +17,7 @@ class TimeoutTracker(Thread):
         self._lock = Lock()
         self._running: Dict[int, Tuple[float, Callback]] = {}
         self._log = logger.bind(process="timeout tracker")
-        self._key_counter = Counter()
+        self._key = 0
 
         super().__init__(name="Timeout tracker")
 
@@ -34,24 +34,17 @@ class TimeoutTracker(Thread):
     def add_timeout(self, duration: timedelta, callback: Callback) -> Callback:
         """Add a timeout to the callbacks"""
 
-        key = self._key_counter.increment()
-
-        def cancel():
-            with self._lock:
-                if not key in self._running:
-                    self._log.warning("Got timeout cancellation after timeout fired")
-                    return
-
-                del self._running[key]
-
-        timeout_time = time.monotonic() + duration.total_seconds()
-
         with self._lock:
-            self._check_timeout_evt.set()
+            key = self._key
+            self._key += 1
+
+            cancel = self._get_cancel(key)
+            timeout_time = time.monotonic() + duration.total_seconds()
+            self._running[key] = (timeout_time, callback)
 
             # Set the event so the loop fires,
             # which will update the sleep time in case this is to be the next firing event
-            self._running[key] = (timeout_time, callback)
+            self._check_timeout_evt.set()
 
         return cancel
 
@@ -75,6 +68,17 @@ class TimeoutTracker(Thread):
             self._check_timeout_evt.wait(delay)
 
         self._log.info("Timeout watcher exiting")
+
+    def _get_cancel(self, key: int) -> Callback:
+        def cancel():
+            with self._lock:
+                if not key in self._running:
+                    self._log.warning("Got timeout cancellation after timeout fired")
+                    return
+
+                del self._running[key]
+
+        return cancel
 
     def _fire_timeouts(self):
         """Loop through all the running timeouts and fire appropriate ones"""
@@ -107,19 +111,3 @@ class TimeoutTracker(Thread):
             return None
 
         return self._next_timeout - time.monotonic()
-
-
-class Counter:
-    """An atomic counter"""
-
-    def __init__(self):
-        self._value = 0
-        self._lock = Lock()
-
-    def increment(self) -> int:
-        """Increment the counter and return the previous value"""
-
-        with self._lock:
-            val = self._value
-            self._value += 1
-            return val
