@@ -70,6 +70,8 @@ class TimeoutTracker(Thread):
         self._log.debug("Stop watcher finished")
 
     def _get_cancel(self, key: int) -> Callback:
+        """Get a cancellation function for a given key"""
+
         def cancel():
             with self._lock:
                 if not key in self._running:
@@ -96,6 +98,8 @@ class TimeoutTracker(Thread):
 
     @property
     def _timeout_delay(self) -> Optional[float]:
+        """Figure out how long to delay until the next event"""
+
         next_timeout: Optional[float] = None
 
         for timeout, _ in self._running.values():
