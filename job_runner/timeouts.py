@@ -61,7 +61,7 @@ class TimeoutTracker(Thread):
                 self._log.debug("Lock acquired for timeout tracker checks")
                 self._check_timeout_evt.clear()
                 self._fire_timeouts()
-                delay = self._next_timeout_delay
+                delay = self._timeout_delay
                 if self._stop_evt.is_set():
                     break
 
@@ -95,19 +95,18 @@ class TimeoutTracker(Thread):
             del self._running[key]
 
     @property
-    def _next_timeout(self) -> Optional[float]:
-        """The monotonic timeout of the nearest timeout object"""
+    def _timeout_delay(self) -> Optional[float]:
+        next_timeout: Optional[float] = None
 
-        timeouts = [timeout for timeout, _ in self._running.values()]
+        for timeout, _ in self._running.values():
+            if not next_timeout:
+                next_timeout = timeout
+                continue
 
-        if not timeouts:
-            return None
+            if timeout < next_timeout:
+                next_timeout = timeout
 
-        return min(timeouts)
+        if next_timeout:
+            return next_timeout - time.monotonic()
 
-    @property
-    def _next_timeout_delay(self) -> Optional[float]:
-        if not self._next_timeout:
-            return None
-
-        return self._next_timeout - time.monotonic()
+        return None
