@@ -47,6 +47,7 @@ class TimeoutTracker(Thread):
         stop_watcher.daemon = True
         stop_watcher.start()
 
+        # This blocks until the stop event is set
         self._run_loop()
 
         self._log.debug("Waiting for stop watcher to close")
