@@ -95,6 +95,17 @@ class Command(BaseCommand):
             ),
         )
 
+        parser.add_argument(
+            "--print-jobs",
+            action="store_const",
+            const=True,
+            default=False,
+            help=(
+                "Print the list of jobs that have been computed. "
+                "Combine with --trial-run to see only the jobs that would be run."
+            ),
+        )
+
         return super().add_arguments(parser)
 
     def handle(
@@ -105,6 +116,7 @@ class Command(BaseCommand):
         include_jobs: List[str] = [],
         exclude_jobs: List[str] = [],
         trial_run: bool = False,
+        print_jobs: bool = False,
         *args,
         **kwargs,
     ):
@@ -155,6 +167,13 @@ class Command(BaseCommand):
 
         if not jobs_ok:
             sys.exit(1)
+
+        if print_jobs:
+            for job in sorted(jobs, key=lambda job: job.name):
+                print(job.name)
+                print(f"\tInterval: {job.interval}")
+                print(f"\tVariance: {job.variance}")
+                print(f"\tTimeout: {job.timeout}")
 
         if trial_run:
             return
