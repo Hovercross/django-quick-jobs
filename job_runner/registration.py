@@ -52,7 +52,7 @@ class RegisteredJob:
         return self._variance
 
     def check_callable_valid(self):
-        # We don't need a "real" stop event since we aren't callint the function
+        # We don't need a "real" stop event since we aren't calling the function
         sample_env, _ = get_environments(Event())
         signature = inspect.signature(self._func)
         # This will throw a type error if it isn't callable
@@ -66,11 +66,15 @@ def register_job(
     interval: AutoTime,
     variance: Optional[AutoTime] = None,
     timeout: Optional[AutoTime] = None,
+    enabled=True,
 ):
     """Decorator to schedule the job to be run every
     interval plus a random time up to variance"""
 
     def decorator(func: Job):
+        if not enabled:
+            return func
+
         return RegisteredJob(
             interval=auto_time(interval),
             variance=auto_time_default(variance, timedelta(0)),
