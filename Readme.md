@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 - Python: 3.7
 - Django: 2.2
 
-Automated tests are currently run against all valid permutations of Python 3.7, 3.8, 3.9, and 3.10 with Django 2.2, 3.0, 3.1, 3.2, and 4.0. The latest point releases are always used for testing.
+Automated tests are currently run against all valid permutations of Python 3.7, 3.8, 3.9, 3.10, and 3.11 with Django 2.2, 3.0, 3.1, 3.2, 4.0, and 4.1. The latest point releases are always used for testing.
 
 ## Example usage
 
