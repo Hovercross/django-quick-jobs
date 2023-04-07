@@ -179,6 +179,7 @@ class Command(BaseCommand):
             return
 
         request_stop = Event()
+
         # Signals can throw extra stuff into args and kwargs that we don't care about.
         # Wrap their handlers up to just call the coordinator stop
         def stop_signal_handler(*args, **kwargs):
