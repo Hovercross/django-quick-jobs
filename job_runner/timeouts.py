@@ -42,10 +42,22 @@ class TimeoutTracker(Thread):
         """Loop through until a timeout is reached"""
 
         # Start up a background thread that watches for a stop event
-        stop_watcher = Thread(target=self._watch_for_stop)
+        stop_watcher = Thread(target=self._stop_watcher)
         stop_watcher.name = "Timeout tracker stop watcher"
         stop_watcher.daemon = True
         stop_watcher.start()
+
+        # This blocks until the stop event is set
+        self._run_loop()
+
+        self._log.debug("Waiting for stop watcher to close")
+        stop_watcher.join()
+        self._log.info("Timeout watcher exiting")
+
+    def _run_loop(self):
+        """Run on a loop until the stop flag is set"""
+
+        self._log.debug("Beginning timeout tracker run loop")
 
         while True:
             self._log.debug("Running timeout tracker checks")
@@ -56,15 +68,15 @@ class TimeoutTracker(Thread):
                 self._fire_timeouts()
                 delay = self._timeout_delay
                 if self._stop_evt.is_set():
-                    break
+                    self._log.debug("Timeout tracker run loop finished")
+                    return
 
             self._check_timeout_evt.wait(delay)
 
-        self._log.debug("Waiting for stop watcher to close")
-        stop_watcher.join()
-        self._log.info("Timeout watcher exiting")
+    def _stop_watcher(self):
+        """Stop watcher that should be run in a thread
+        and will proxy the stop event to the timeout event"""
 
-    def _watch_for_stop(self):
         self._log.debug("Beginning stop watcher")
         self._stop_evt.wait()
         self._log.debug("Stop event fired, setting check timeout event")
